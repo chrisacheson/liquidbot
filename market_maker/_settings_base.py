@@ -51,7 +51,7 @@ MAINTAIN_SPREADS = True
 # Further information:
 # Each order is designed to be (INTERVAL*n)% away from the spread.
 # If the spread changes and the order has moved outside its bound defined as
-# (INTERVAL*n) - RELIST_INTERVAL < current_spread < (INTERVAL*n) + RELIST+INTERVAL
+# abs((desired_order['price'] / order['price']) - 1) > settings.RELIST_INTERVAL)
 # it will be resubmitted.
 #
 # 0.01 == 1%
