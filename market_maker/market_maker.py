@@ -161,7 +161,7 @@ class ExchangeInterface:
 
     def check_market_open(self):
         instrument = self.get_instrument()
-        if instrument["state"] != "Open":
+        if instrument["state"] != "Open" and instrument["state"] != "Closed":
             raise errors.MarketClosedError("The instrument %s is not open. State: %s" %
                                            (self.symbol, instrument["state"]))
             sys.exit()
