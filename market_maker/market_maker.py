@@ -76,7 +76,7 @@ class ExchangeInterface:
             elif instrument['isInverse']:
                 future_type = "Inverse"
             else:
-                raise NotImplementedError("Unknown future type; not quanto or inverse: %s" % instrument.symbol)
+                raise NotImplementedError("Unknown future type; not quanto or inverse: %s" % instrument['symbol'])
 
             multiplier = float(instrument['multiplier']) / float(instrument['underlyingToSettleMultiplier'])
 
