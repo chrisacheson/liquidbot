@@ -256,21 +256,30 @@ class BitMEXWebsocket():
                     for updateData in message['data']:
                         item = findItemByKeys(self.keys[table], self.data[table], updateData)
                         if not item:
-                            return  # No item found to update. Could happen before push
+                            continue  # No item found to update. Could happen before push
 
                         # Log executions
-                        is_canceled = 'ordStatus' in updateData and updateData['ordStatus'] == 'Canceled'
-                        if table == 'order' and 'leavesQty' in updateData and not is_canceled:
-                            instrument = self.get_instrument(item['symbol'])
-                            contExecuted = abs(item['leavesQty'] - updateData['leavesQty'])
-                            self.logger.info("Execution: %s %d Contracts of %s at %.*f" %
+                        if table == 'order':
+                            is_canceled = 'ordStatus' in updateData and updateData['ordStatus'] == 'Canceled'
+                            if 'leavesQty' in updateData and not is_canceled:
+                                prevExecuted = item['orderQty'] - item['leavesQty']
+                                nowExecuted = (
+                                    updateData['orderQty'] if 'orderQty' in updateData else item['orderQty'] -
+                                    updateData['leavesQty'])
+                                contExecuted = nowExecuted - prevExecuted
+                                if contExecuted > 0:
+                                    instrument = self.get_instrument(item['symbol'])
+                                    self.logger.info("Execution: %s %d Contracts of %s at %.*f" %
                                              (item['side'], contExecuted, item['symbol'],
                                               instrument['tickLog'], item['price']))
 
+                        # Update this item.
                         item.update(updateData)
-                        # Remove cancelled / filled orders
+
+                        # Remove canceled / filled orders
                         if table == 'order' and item['leavesQty'] <= 0:
                             self.data[table].remove(item)
+
                 elif action == 'delete':
                     self.logger.debug('%s: deleting %s' % (table, message['data']))
                     # Locate the item in the collection and remove it.
