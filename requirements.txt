@@ -1,0 +1,8 @@
+appdirs==1.4.3
+backports.ssl-match-hostname==3.5.0.1
+future==0.16.0
+packaging==16.8
+pyparsing==2.2.0
+requests==2.13.0
+six==1.10.0
+websocket-client==0.40.0

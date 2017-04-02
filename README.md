@@ -24,6 +24,7 @@ Getting Started
 1. Create a [Testnet BitMEX Account](https://testnet.bitmex.com) and [deposit some TBTC](https://testnet.bitmex.com/app/deposit).
 1. Get dependencies: `python setup.py install`
   * This will create a `settings.py` file at the root. Modify this file to tune parameters.
+  * Alternatively, if you use `virtualenv`, create a venv and run `pip install -r requirements.txt`.
 1. Edit settings.py to add your [BitMEX API Key and Secret](https://testnet.bitmex.com/app/apiKeys) and change bot parameters.
   * Note that user/password authentication is not supported.
   * Run with DRY_RUN=True to test cost and spread.
@@ -108,6 +109,14 @@ Most calls to the API consume one request, except:
 If you are quoting multiple contracts and your ratelimit is becoming an obstacle, please
 [email support](mailto:support@bitmex.com) with details of your quoting. In the vast majority of cases,
 we are able to raise a user's ratelimit without issue.
+
+Troubleshooting
+---------------
+
+Common errors we've seen:
+
+* `TypeError: __init__() got an unexpected keyword argument 'json'`
+  * This is caused by an outdated version of `requests`. Run `pip install requests` to update.
 
 
 Compatibility
