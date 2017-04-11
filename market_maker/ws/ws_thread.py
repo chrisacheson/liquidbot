@@ -261,12 +261,8 @@ class BitMEXWebsocket():
                         # Log executions
                         if table == 'order':
                             is_canceled = 'ordStatus' in updateData and updateData['ordStatus'] == 'Canceled'
-                            if 'leavesQty' in updateData and not is_canceled:
-                                prevExecuted = item['orderQty'] - item['leavesQty']
-                                nowExecuted = (
-                                    updateData['orderQty'] if 'orderQty' in updateData else item['orderQty'] -
-                                    updateData['leavesQty'])
-                                contExecuted = nowExecuted - prevExecuted
+                            if 'cumQty' in updateData and not is_canceled:
+                                contExecuted = updateData['cumQty'] - item['cumQty']
                                 if contExecuted > 0:
                                     instrument = self.get_instrument(item['symbol'])
                                     self.logger.info("Execution: %s %d Contracts of %s at %.*f" %
