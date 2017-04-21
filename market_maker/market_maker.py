@@ -446,9 +446,10 @@ class OrderManager:
         # Sanity check:
         if self.get_price_offset(-1) >= ticker["sell"] or self.get_price_offset(1) <= ticker["buy"]:
             logger.error(self.start_position_buy, self.start_position_sell)
-            logger.error("%s %s %s %s" % (self.get_price_offset(-1), ticker["sell"], self.get_price_offset(1), ticker["buy"]))
+            logger.error("First buy position: %s\nBitMEX Best Ask: %s\nFirst sell position: %s\nBitMEX Best Bid: %s" %
+                         (self.get_price_offset(-1), ticker["sell"], self.get_price_offset(1), ticker["buy"]))
             logger.error("Sanity check failed, exchange data is inconsistent")
-            sys.exit()
+            self.exit()
 
         # Messanging if the position limits are reached
         if self.long_position_limit_exceeded():
