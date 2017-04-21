@@ -31,6 +31,9 @@ class BitMEXWebsocket():
         self.logger = logging.getLogger('root')
         self.__reset()
 
+    def __del__(self):
+        self.exit()
+
     def connect(self, endpoint="", symbol="XBTN15", shouldAuth=True):
         '''Connect to the websocket and initialize data stores.'''
 
