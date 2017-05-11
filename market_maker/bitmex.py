@@ -36,7 +36,7 @@ class BitMEX(object):
         # Prepare HTTPS session
         self.session = requests.Session()
         # These headers are always sent
-        self.session.headers.update({'user-agent': 'liquidbot-' + constants.VERSION})
+        self.session.headers.update({'user-agent': 'liquidbot-' + constants.VERSION.rstrip()})
         self.session.headers.update({'content-type': 'application/json'})
         self.session.headers.update({'accept': 'application/json'})
 
