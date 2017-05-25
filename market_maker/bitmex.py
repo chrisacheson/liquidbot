@@ -27,6 +27,10 @@ class BitMEX(object):
         if (login or password or otpToken):
             raise Exception("User/password authentication is no longer supported via the API. Please use " +
                             "an API key. You can generate one at https://www.bitmex.com/app/apiKeys")
+        if (apiKey is None):
+            raise Exception("Please set an API key and Secret to get started. See " +
+                            "https://github.com/BitMEX/sample-market-maker/#getting-started for more information."
+                            )
         self.apiKey = apiKey
         self.apiSecret = apiSecret
         if len(orderIDPrefix) > 13:
