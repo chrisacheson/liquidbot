@@ -149,7 +149,6 @@ class BitMEXWebsocket():
                                          on_close=self.__on_close,
                                          on_open=self.__on_open,
                                          on_error=self.__on_error,
-                                         # We can login using email/pass or API key
                                          header=self.__get_auth())
 
         self.wst = threading.Thread(target=lambda: self.ws.run_forever())
@@ -174,22 +173,15 @@ class BitMEXWebsocket():
         if self.shouldAuth is False:
             return []
 
-        if not settings.API_KEY:
-            self.logger.info("Authenticating with email/password.")
-            return [
-                "email: " + settings.LOGIN,
-                "password: " + settings.PASSWORD
-            ]
-        else:
-            self.logger.info("Authenticating with API Key.")
-            # To auth to the WS using an API key, we generate a signature of a nonce and
-            # the WS API endpoint.
-            nonce = generate_nonce()
-            return [
-                "api-nonce: " + str(nonce),
-                "api-signature: " + generate_signature(settings.API_SECRET, 'GET', '/realtime', nonce, ''),
-                "api-key:" + settings.API_KEY
-            ]
+        self.logger.info("Authenticating with API Key.")
+        # To auth to the WS using an API key, we generate a signature of a nonce and
+        # the WS API endpoint.
+        nonce = generate_nonce()
+        return [
+            "api-nonce: " + str(nonce),
+            "api-signature: " + generate_signature(settings.API_SECRET, 'GET', '/realtime', nonce, ''),
+            "api-key:" + settings.API_KEY
+        ]
 
     def __wait_for_account(self):
         '''On subscribe, this data will come down. Wait for it.'''
