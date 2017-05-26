@@ -261,7 +261,7 @@ class BitMEX(object):
                                           query={'filter': json.dumps({'clOrdID': postdict['clOrdID']})},
                                           verb='GET')[0]
                 if (
-                        order['orderQty'] != postdict['quantity'] or
+                        order['orderQty'] != postdict['orderQty'] or
                         order['price'] != postdict['price'] or
                         order['symbol'] != postdict['symbol']):
                     raise Exception('Attempted to recover from duplicate clOrdID, but order returned from API ' +
