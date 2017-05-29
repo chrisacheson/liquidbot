@@ -53,7 +53,10 @@ class APIKeyAuthWithExpires(AuthBase):
         if parsedURL.query:
             path = path + '?' + parsedURL.query
 
-        # print "Computing HMAC: %s" % verb + path + str(nonce) + data
+        if isinstance(data, (bytes, bytearray)):
+            data = data.decode('utf8')
+
+        # print("Computing HMAC: %s" % verb + path + str(nonce) + data)
         message = verb + path + str(nonce) + data
 
         signature = hmac.new(bytes(secret, 'utf8'), bytes(message, 'utf8'), digestmod=hashlib.sha256).hexdigest()

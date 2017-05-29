@@ -3,7 +3,7 @@ import subprocess
 XBt_TO_XBT = 100000000
 VERSION = 'v1.1'
 try:
-    VERSION = subprocess.check_output(["git", "describe", "--tags"]).rstrip()
+    VERSION = str(subprocess.check_output(["git", "describe", "--tags"]).rstrip())
 except Exception as e:
     # git not available, ignore
     pass

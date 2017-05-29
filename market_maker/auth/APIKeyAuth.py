@@ -52,6 +52,9 @@ def generate_signature(secret, verb, url, nonce, data):
     if parsedURL.query:
         path = path + '?' + parsedURL.query
 
+    if isinstance(data, (bytes, bytearray)):
+        data = data.decode('utf8')
+
     # print "Computing HMAC: %s" % verb + path + str(nonce) + data
     message = verb + path + str(nonce) + data
 
