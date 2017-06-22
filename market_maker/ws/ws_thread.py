@@ -2,6 +2,7 @@ import sys
 import websocket
 import threading
 import traceback
+import ssl
 from time import sleep
 import json
 import decimal
@@ -144,14 +145,17 @@ class BitMEXWebsocket():
         '''Connect to the websocket in a thread.'''
         self.logger.debug("Starting thread")
 
+        ssl_defaults = ssl.get_default_verify_paths()
+        sslopt_ca_certs = {'ca_certs': ssl_defaults.cafile}
         self.ws = websocket.WebSocketApp(wsURL,
                                          on_message=self.__on_message,
                                          on_close=self.__on_close,
                                          on_open=self.__on_open,
                                          on_error=self.__on_error,
-                                         header=self.__get_auth())
+                                         header=self.__get_auth()
+                                         )
 
-        self.wst = threading.Thread(target=lambda: self.ws.run_forever())
+        self.wst = threading.Thread(target=lambda: self.ws.run_forever(sslopt=sslopt_ca_certs))
         self.wst.daemon = True
         self.wst.start()
         self.logger.info("Started thread")
