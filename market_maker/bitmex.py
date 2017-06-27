@@ -228,12 +228,25 @@ class BitMEX(object):
                 self.logger.error("Unable to contact the BitMEX API (404). " +
                                   "Request: %s \n %s" % (url, json.dumps(postdict)))
 
-            # 429, ratelimit
+            # 429, ratelimit; cancel orders & wait until X-Ratelimit-Reset
             elif response.status_code == 429:
                 self.logger.error("Ratelimited on current request. Sleeping, then trying again. Try fewer " +
                                   "order pairs or contact support@bitmex.com to raise your limits. " +
                                   "Request: %s \n %s" % (url, json.dumps(postdict)))
-                sleep(1)
+
+                # Figure out how long we need to wait.
+                ratelimit_reset = response.headers['X-Ratelimit-Reset']
+                to_sleep = int(ratelimit_reset) - int(time.time())
+                reset_str = datetime.datetime.fromtimestamp(int(ratelimit_reset)).strftime('%X')
+
+                # We're ratelimited, and we may be waiting for a long time. Cancel orders.
+                self.logger.warning("Canceling all known orders in the meantime.")
+                self.cancel([o['orderID'] for o in self.open_orders()])
+
+                self.logger.error("Your ratelimit will reset at %s. Sleeping for %d seconds." % (reset_str, to_sleep))
+                time.sleep(to_sleep)
+
+                # Retry the request.
                 return self._curl_bitmex(api, query, postdict, timeout, verb)
 
             # 503 - BitMEX temporary downtime, likely due to a deploy. Try again
