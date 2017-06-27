@@ -1,7 +1,8 @@
 """BitMEX API Connector."""
 from __future__ import absolute_import
 import requests
-from time import sleep
+import time
+import datetime
 import json
 import base64
 import uuid
@@ -49,7 +50,7 @@ class BitMEX(object):
         self.ws.connect(base_url, symbol, shouldAuth=shouldWSAuth)
 
     def __del__(self):
-        self.exit();
+        self.exit()
 
     def exit(self):
         self.ws.exit()
@@ -142,7 +143,7 @@ class BitMEX(object):
     @authentication_required
     def amend_bulk_orders(self, orders):
         """Amend multiple orders."""
-        return self._curl_bitmex(api='order/bulk', postdict={'orders': orders}, verb='PUT', rethrow_errors=True)
+        return self._curl_bitmex(api='order/bulk', postdict={'orders': orders}, verb='PUT')
 
     @authentication_required
     def create_bulk_orders(self, orders):
@@ -189,7 +190,7 @@ class BitMEX(object):
         }
         return self._curl_bitmex(api=api, postdict=postdict, verb="POST")
 
-    def _curl_bitmex(self, api, query=None, postdict=None, timeout=3, verb=None, rethrow_errors=False):
+    def _curl_bitmex(self, api, query=None, postdict=None, timeout=3, verb=None):
         """Send a request to BitMEX Servers."""
         # Handle URL
         url = self.base_url + api
@@ -202,12 +203,6 @@ class BitMEX(object):
         auth = AccessTokenAuth(self.token)
         if self.apiKey:
             auth = APIKeyAuthWithExpires(self.apiKey, self.apiSecret)
-
-        def maybe_exit(e):
-            if rethrow_errors:
-                raise e
-            else:
-                exit(1)
 
         # Make the request
         try:
@@ -224,9 +219,6 @@ class BitMEX(object):
                 self.logger.error("Error: " + response.text)
                 if postdict:
                     self.logger.error(postdict)
-                # Always exit, even if rethrow_errors, because this is fatal
-                exit(1)
-                return self._curl_bitmex(api, query, postdict, timeout, verb)
 
             # 404, can be thrown if order canceled does not exist.
             elif response.status_code == 404:
@@ -235,7 +227,6 @@ class BitMEX(object):
                     return
                 self.logger.error("Unable to contact the BitMEX API (404). " +
                                   "Request: %s \n %s" % (url, json.dumps(postdict)))
-                maybe_exit(e)
 
             # 429, ratelimit
             elif response.status_code == 429:
@@ -249,32 +240,37 @@ class BitMEX(object):
             elif response.status_code == 503:
                 self.logger.warning("Unable to contact the BitMEX API (503), retrying. " +
                                     "Request: %s \n %s" % (url, json.dumps(postdict)))
-                sleep(1)
+                time.sleep(3)
                 return self._curl_bitmex(api, query, postdict, timeout, verb)
 
-            # Duplicate clOrdID: that's fine, probably a deploy, go get the order and return it
-            elif (response.status_code == 400 and
-                  response.json()['error'] and
-                  response.json()['error']['message'] == 'Duplicate clOrdID'):
+            elif response.status_code == 400:
+                error = response.json()['error']
+                message = error['message'].lower()
+                # Duplicate clOrdID: that's fine, probably a deploy, go get the order and return it
+                if 'duplicate clordid' in message:
 
-                order = self._curl_bitmex('/order',
-                                          query={'filter': json.dumps({'clOrdID': postdict['clOrdID']})},
-                                          verb='GET')[0]
-                if (
-                        order['orderQty'] != postdict['orderQty'] or
-                        order['price'] != postdict['price'] or
-                        order['symbol'] != postdict['symbol']):
-                    raise Exception('Attempted to recover from duplicate clOrdID, but order returned from API ' +
-                                    'did not match POST.\nPOST data: %s\nReturned order: %s' % (
-                                        json.dumps(postdict), json.dumps(order)))
-                # All good
-                return order
+                    order = self._curl_bitmex('/order',
+                                              query={'filter': json.dumps({'clOrdID': postdict['clOrdID']})},
+                                              verb='GET')[0]
+                    if (
+                            order['orderQty'] != postdict['orderQty'] or
+                            order['price'] != postdict['price'] or
+                            order['symbol'] != postdict['symbol']):
+                        raise Exception('Attempted to recover from duplicate clOrdID, but order returned from API ' +
+                                        'did not match POST.\nPOST data: %s\nReturned order: %s' % (
+                                            json.dumps(postdict), json.dumps(order)))
+                    # All good
+                    return order
+                elif 'insufficient available balance' in message:
+                    raise Exception('Account out of funds. The message: %s' % error['message'])
 
             # Unknown Error
             else:
                 self.logger.error("Unhandled Error: %s: %s" % (e, response.text))
                 self.logger.error("Endpoint was: %s %s: %s" % (verb, api, json.dumps(postdict)))
-                maybe_exit(e)
+
+            # If we made it this far, raise
+            raise e
 
         except requests.exceptions.Timeout as e:
             # Timeout, re-run this request
@@ -284,7 +280,7 @@ class BitMEX(object):
         except requests.exceptions.ConnectionError as e:
             self.logger.warning("Unable to contact the BitMEX API (ConnectionError). Please check the URL. Retrying. " +
                                 "Request: %s \n %s" % (url, json.dumps(postdict)))
-            sleep(1)
+            time.sleep(1)
             return self._curl_bitmex(api, query, postdict, timeout, verb)
 
         return response.json()
