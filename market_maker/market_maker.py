@@ -105,6 +105,9 @@ class ExchangeInterface:
             elif item['futureType'] == "Inverse":
                 spot_delta += (item['multiplier'] / item['spot']) * item['currentQty']
                 mark_delta += (item['multiplier'] / item['markPrice']) * item['currentQty']
+            elif item['futureType'] == "Linear":
+                spot_delta += item['multiplier'] * item['currentQty']
+                mark_delta += item['multiplier'] * item['currentQty']
         basis_delta = mark_delta - spot_delta
         delta = {
             "spot": spot_delta,
