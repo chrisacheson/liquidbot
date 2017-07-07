@@ -75,6 +75,8 @@ class ExchangeInterface:
                 future_type = "Quanto"
             elif instrument['isInverse']:
                 future_type = "Inverse"
+            elif not instrument['isQuanto'] and not instrument['isInverse']:
+                future_type = "Linear"
             else:
                 raise NotImplementedError("Unknown future type; not quanto or inverse: %s" % instrument['symbol'])
 
