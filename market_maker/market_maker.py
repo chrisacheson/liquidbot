@@ -80,7 +80,10 @@ class ExchangeInterface:
             else:
                 raise NotImplementedError("Unknown future type; not quanto or inverse: %s" % instrument['symbol'])
 
-            multiplier = float(instrument['multiplier']) / float(instrument['underlyingToSettleMultiplier'])
+            if instrument['underlyingToSettleMultiplier'] is None:
+                multiplier = float(instrument['multiplier']) / float(instrument['quoteToSettleMultiplier'])
+            else:
+                multiplier = float(instrument['multiplier']) / float(instrument['underlyingToSettleMultiplier'])
 
             portfolio[symbol] = {
                 "currentQty": float(position['currentQty']),
