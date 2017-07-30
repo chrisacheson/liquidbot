@@ -216,17 +216,13 @@ class BitMEX(object):
             # 401 - Auth error. This is fatal with API keys.
             if response.status_code == 401:
                 self.logger.error("Login information or API Key incorrect, please check and restart.")
-                self.logger.error("Error: " + response.text)
-                if postdict:
-                    self.logger.error(postdict)
 
             # 404, can be thrown if order canceled does not exist.
             elif response.status_code == 404:
                 if verb == 'DELETE':
                     self.logger.error("Order not found: %s" % postdict['orderID'])
                     return
-                self.logger.error("Unable to contact the BitMEX API (404). " +
-                                  "Request: %s \n %s" % (url, json.dumps(postdict)))
+                self.logger.error("Unable to contact the BitMEX API (404). ")
 
             # 429, ratelimit; cancel orders & wait until X-Ratelimit-Reset
             elif response.status_code == 429:
@@ -277,12 +273,9 @@ class BitMEX(object):
                 elif 'insufficient available balance' in message:
                     raise Exception('Account out of funds. The message: %s' % error['message'])
 
-            # Unknown Error
-            else:
-                self.logger.error("Unhandled Error: %s: %s" % (e, response.text))
-                self.logger.error("Endpoint was: %s %s: %s" % (verb, api, json.dumps(postdict)))
-
-            # If we made it this far, raise
+            # If we haven't returned or re-raised yet, we get here.
+            self.logger.error("Error: %s: %s" % (e, response.text))
+            self.logger.error("Endpoint was: %s %s: %s" % (verb, api, json.dumps(postdict)))
             raise e
 
         except requests.exceptions.Timeout as e:
