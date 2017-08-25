@@ -102,8 +102,10 @@ def bitmex_signature(apiSecret, verb, url, nonce, postdict=None):
         path = path + '?' + parsedURL.query
     # print("Computing HMAC: %s" % verb + path + str(nonce) + data)
     message = bytes(verb + path + str(nonce) + data).encode('utf-8')
+    print("Signing: %s" % str(message))
 
     signature = hmac.new(apiSecret, message, digestmod=hashlib.sha256).hexdigest()
+    print("Signature: %s" % signature)
     return signature
 
 if __name__ == "__main__":
