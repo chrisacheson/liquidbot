@@ -18,6 +18,12 @@ It is free to use and modify for your own strategies. It provides the following:
 
 **Develop on [Testnet](https://testnet.bitmex.com) first!** Testnet trading is completely free and is identical to the live market.
 
+> BitMEX is not responsible for any losses incurred when using this code. This code is intended for sample purposes ONLY - do not
+  use this code for real trades unless you fully understand what it does and what its caveats are.
+
+> This is not a sophisticated market making program. It is intended to show the basics of market making while abstracting some
+  of the rote work of interacting with the BitMEX API. It does not make smart decisions and will likely lose money.
+
 Getting Started
 ---------------
 
