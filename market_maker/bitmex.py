@@ -18,11 +18,12 @@ class BitMEX(object):
     """BitMEX API Connector."""
 
     def __init__(self, base_url=None, symbol=None, apiKey=None, apiSecret=None,
-                 orderIDPrefix='mm_bitmex_', shouldWSAuth=True):
+                 orderIDPrefix='mm_bitmex_', shouldWSAuth=True, postOnly=False):
         """Init connector."""
         self.logger = logging.getLogger('root')
         self.base_url = base_url
         self.symbol = symbol
+        self.postOnly = postOnly
         if (apiKey is None):
             raise Exception("Please set an API key and Secret to get started. See " +
                             "https://github.com/BitMEX/sample-market-maker/#getting-started for more information."
@@ -170,6 +171,8 @@ class BitMEX(object):
         for order in orders:
             order['clOrdID'] = self.orderIDPrefix + base64.b64encode(uuid.uuid4().bytes).decode('utf8').rstrip('=\n')
             order['symbol'] = self.symbol
+            if self.postOnly:
+                order['execInst'] = 'ParticipateDoNotInitiate'
         return self._curl_bitmex(path='order/bulk', postdict={'orders': orders}, verb='POST')
 
     @authentication_required

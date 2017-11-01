@@ -68,6 +68,11 @@ CHECK_POSITION_LIMITS = False
 MIN_POSITION = -10000
 MAX_POSITION = 10000
 
+# If True, will only send orders that rest in the book (ExecInst: ParticipateDoNotInitiate).
+# Use to guarantee a maker rebate.
+# However -- orders that would have matched immediately will instead cancel, and you may end up with
+# unexpected delta. Be careful.
+POST_ONLY = False
 
 ########################################################################################################################
 # Misc Behavior, Technicals
