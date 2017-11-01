@@ -200,9 +200,9 @@ class BitMEXWebsocket():
         while not {'instrument', 'trade', 'quote'} <= set(self.data):
             sleep(0.1)
 
-    def __send_command(self, command, args=[]):
+    def __send_command(self, command, args):
         '''Send a raw command.'''
-        self.ws.send(json.dumps({"op": command, "args": args}))
+        self.ws.send(json.dumps({"op": command, "args": args or []}))
 
     def __on_message(self, ws, message):
         '''Handler for parsing WS messages.'''

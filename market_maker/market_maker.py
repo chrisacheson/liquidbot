@@ -35,7 +35,7 @@ class ExchangeInterface:
                                     apiSecret=settings.API_SECRET, orderIDPrefix=settings.ORDERID_PREFIX)
 
     def cancel_order(self, order):
-        logger.info("Cancelling: %s %d @ %.2f" % (order['side'], order['orderQty'], "@", order['price']))
+        logger.info("Cancelling: %s %d @ %.2f" % (order['side'], order['orderQty'], order['price']))
         while True:
             try:
                 self.bitmex.cancel(order['orderID'])
@@ -172,14 +172,12 @@ class ExchangeInterface:
         if instrument["state"] != "Open" and instrument["state"] != "Closed":
             raise errors.MarketClosedError("The instrument %s is not open. State: %s" %
                                            (self.symbol, instrument["state"]))
-            sys.exit()
 
     def check_if_orderbook_empty(self):
         """This function checks whether the order book is empty"""
         instrument = self.get_instrument()
         if instrument['midPrice'] is None:
             raise errors.MarketEmptyError("Orderbook is empty, cannot quote")
-            sys.exit()
 
     def amend_bulk_orders(self, orders):
         if self.dry_run:
