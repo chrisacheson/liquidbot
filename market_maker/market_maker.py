@@ -363,7 +363,7 @@ class OrderManager:
                         # If price has changed, and the change is more than our RELIST_INTERVAL, amend.
                         desired_order['price'] != order['price'] and
                         abs((desired_order['price'] / order['price']) - 1) > settings.RELIST_INTERVAL):
-                    to_amend.append({'orderID': order['orderID'], 'leavesQty': desired_order['orderQty'],
+                    to_amend.append({'orderID': order['orderID'], 'orderQty': order['cumQty'] + desired_order['orderQty'],
                                      'price': desired_order['price'], 'side': order['side']})
             except IndexError:
                 # Will throw if there isn't a desired order to match. In that case, cancel it.
@@ -383,7 +383,7 @@ class OrderManager:
                 logger.info("Amending %4s: %d @ %.*f to %d @ %.*f (%+.*f)" % (
                     amended_order['side'],
                     reference_order['leavesQty'], tickLog, reference_order['price'],
-                    amended_order['leavesQty'], tickLog, amended_order['price'],
+                    (amended_order['orderQty'] - reference_order['cumQty']), tickLog, amended_order['price'],
                     tickLog, (amended_order['price'] - reference_order['price'])
                 ))
             # This can fail if an order has closed in the time we were processing.
