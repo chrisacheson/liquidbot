@@ -10,7 +10,7 @@ import signal
 
 from market_maker import bitmex
 from market_maker.settings import settings
-from market_maker.utils import log, constants, errors
+from market_maker.utils import log, constants, errors, math
 
 # Used for reloading the bot - saves modified times of key files
 import os
@@ -35,7 +35,8 @@ class ExchangeInterface:
                                     orderIDPrefix=settings.ORDERID_PREFIX, postOnly=settings.POST_ONLY)
 
     def cancel_order(self, order):
-        logger.info("Cancelling: %s %d @ %.2f" % (order['side'], order['orderQty'], order['price']))
+        tickLog = self.get_instrument()['tickLog']
+        logger.info("Canceling: %s %d @ %.*f" % (order['side'], order['orderQty'], tickLog, order['price']))
         while True:
             try:
                 self.bitmex.cancel(order['orderID'])
@@ -50,14 +51,15 @@ class ExchangeInterface:
         if self.dry_run:
             return
 
-        logger.info("Resetting current position. Cancelling all existing orders.")
+        logger.info("Resetting current position. Canceling all existing orders.")
+        tickLog = self.get_instrument()['tickLog']
 
         # In certain cases, a WS update might not make it through before we call this.
         # For that reason, we grab via HTTP to ensure we grab them all.
         orders = self.bitmex.http_open_orders()
 
         for order in orders:
-            logger.info("Cancelling: %s %d @ %.2f" % (order['side'], order['orderQty'], order['price']))
+            logger.info("Canceling: %s %d @ %.*f" % (order['side'], order['orderQty'], tickLog, order['price']))
 
         if len(orders):
             self.bitmex.cancel([order['orderID'] for order in orders])
@@ -234,6 +236,7 @@ class OrderManager:
         margin = self.exchange.get_margin()
         position = self.exchange.get_position()
         self.running_qty = self.exchange.get_delta()
+        tickLog = self.exchange.get_instrument()['tickLog']
         self.start_XBt = margin["marginBalance"]
 
         logger.info("Current XBT Balance: %.6f" % XBt_to_XBT(self.start_XBt))
@@ -241,13 +244,14 @@ class OrderManager:
         if settings.CHECK_POSITION_LIMITS:
             logger.info("Position limits: %d/%d" % (settings.MIN_POSITION, settings.MAX_POSITION))
         if position['currentQty'] != 0:
-            logger.info("Avg Cost Price: %.2f" % float(position['avgCostPrice']))
-            logger.info("Avg Entry Price: %.2f" % float(position['avgEntryPrice']))
+            logger.info("Avg Cost Price: %.*f" % (tickLog, float(position['avgCostPrice'])))
+            logger.info("Avg Entry Price: %.*f" % (tickLog, float(position['avgEntryPrice'])))
         logger.info("Contracts Traded This Run: %d" % (self.running_qty - self.starting_qty))
         logger.info("Total Contract Delta: %.4f XBT" % self.exchange.calc_delta()['spot'])
 
     def get_ticker(self):
         ticker = self.exchange.get_ticker()
+        tickLog = self.exchange.get_instrument()['tickLog']
 
         # Set up our buy & sell positions as the smallest possible unit above and below the current spread
         # and we'll work out from there. That way we always have the best price but we don't kill wide
@@ -272,11 +276,12 @@ class OrderManager:
         # Midpoint, used for simpler order placement.
         self.start_position_mid = ticker["mid"]
         logger.info(
-            "%s Ticker: Buy: %.2f, Sell: %.2f" %
-            (self.instrument['symbol'], ticker["buy"], ticker["sell"])
+            "%s Ticker: Buy: %.*f, Sell: %.*f" %
+            (self.instrument['symbol'], tickLog, ticker["buy"], tickLog, ticker["sell"])
         )
-        logger.info('Start Positions: Buy: %.2f, Sell: %.2f, Mid: %.2f' %
-                    (self.start_position_buy, self.start_position_sell, self.start_position_mid))
+        logger.info('Start Positions: Buy: %.*f, Sell: %.*f, Mid: %.*f' %
+                    (tickLog, self.start_position_buy, tickLog, self.start_position_sell,
+                     tickLog, self.start_position_mid))
         return ticker
 
     def get_price_offset(self, index):
@@ -299,7 +304,7 @@ class OrderManager:
             if index < 0 and start_position > self.start_position_sell:
                 start_position = self.start_position_buy
 
-        return round(start_position * (1 + settings.INTERVAL) ** index, self.instrument['tickLog'])
+        return math.toNearest(start_position * (1 + settings.INTERVAL) ** index, self.instrument['tickSize'])
 
     ###
     # Orders
