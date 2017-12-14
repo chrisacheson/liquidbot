@@ -6,12 +6,13 @@ from shutil import copyfile
 here = dirname(__file__)
 
 setup(name='bitmex-market-maker',
-      version='0.3',
+      version='1.2',
       description='Market making bot for BitMEX API',
+      url='https://github.com/BitMEX/sample-market-maker',
+      download_url='https://github.com/BitMEX/sample-market-maker/archive/v1.2.zip',
       long_description=open(join(here, 'README.md')).read(),
       author='Samuel Reed',
       author_email='sam@bitmex.com',
-      url='',
       install_requires=[
           'requests',
           'websocket-client',
