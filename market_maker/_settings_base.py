@@ -90,6 +90,7 @@ LOOP_INTERVAL = 5
 # Wait times between orders / errors
 API_REST_INTERVAL = 1
 API_ERROR_INTERVAL = 10
+TIMEOUT = 7
 
 # If we're doing a dry run, use these numbers for BTC balances
 DRY_BTC = 50

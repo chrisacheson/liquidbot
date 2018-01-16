@@ -18,7 +18,7 @@ class BitMEX(object):
     """BitMEX API Connector."""
 
     def __init__(self, base_url=None, symbol=None, apiKey=None, apiSecret=None,
-                 orderIDPrefix='mm_bitmex_', shouldWSAuth=True, postOnly=False):
+                 orderIDPrefix='mm_bitmex_', shouldWSAuth=True, postOnly=False, timeout=7):
         """Init connector."""
         self.logger = logging.getLogger('root')
         self.base_url = base_url
@@ -45,6 +45,8 @@ class BitMEX(object):
         # Create websocket for streaming data
         self.ws = BitMEXWebsocket()
         self.ws.connect(base_url, symbol, shouldAuth=shouldWSAuth)
+
+        self.timeout = timeout
 
     def __del__(self):
         self.exit()
@@ -215,11 +217,14 @@ class BitMEX(object):
         }
         return self._curl_bitmex(path=path, postdict=postdict, verb="POST", max_retries=0)
 
-    def _curl_bitmex(self, path, query=None, postdict=None, timeout=7, verb=None, rethrow_errors=False,
+    def _curl_bitmex(self, path, query=None, postdict=None, timeout=None, verb=None, rethrow_errors=False,
                      max_retries=None):
         """Send a request to BitMEX Servers."""
         # Handle URL
         url = self.base_url + path
+
+        if timeout is None:
+            timeout = self.timeout
 
         # Default to POST if data is attached, GET otherwise
         if not verb:
