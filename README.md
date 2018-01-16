@@ -122,12 +122,10 @@ Troubleshooting
 Common errors we've seen:
 
 * `TypeError: __init__() got an unexpected keyword argument 'json'`
-  * This is caused by an outdated version of `requests`. Run `pip install requests` to update.
+  * This is caused by an outdated version of `requests`. Run `pip install -U requests` to update.
 
 
 Compatibility
 -------------
 
-This module is compatible with both Python 2 and 3 using Python's `future` module.
-
-Some helpful tips on Py2/3 compatibility: http://python-future.org/compatible_idioms.html
+This module supports Python 3.5 and later.
