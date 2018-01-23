@@ -28,14 +28,15 @@ Getting Started
 ---------------
 
 1. Create a [Testnet BitMEX Account](https://testnet.bitmex.com) and [deposit some TBTC](https://testnet.bitmex.com/app/deposit).
-1. Get dependencies: `python setup.py install`
-    * This will create a `settings.py` file at the root. Modify this file to tune parameters.
-    * Alternatively, if you use `virtualenv`, create a venv and run `pip install -r requirements.txt`.
-1. Edit settings.py to add your [BitMEX API Key and Secret](https://testnet.bitmex.com/app/apiKeys) and change bot parameters.
+2. Install: `pip install bitmex-market-maker`
+3. Create a marketmaker project: run `marketmaker setup`
+    * This will create `settings.py` and `market_maker/` in the working directory.
+    * Modify `settings.py` to tune parameters.
+4. Edit settings.py to add your [BitMEX API Key and Secret](https://testnet.bitmex.com/app/apiKeys) and change bot parameters.
     * Note that user/password authentication is not supported.
     * Run with DRY_RUN=True to test cost and spread.
-1. Run it: `./marketmaker [symbol]`
-1. Satisfied with your bot's performance? Create a [live API Key](https://www.bitmex.com/app/apiKeys) for your
+5. Run it: `marketmaker [symbol]`
+6. Satisfied with your bot's performance? Create a [live API Key](https://www.bitmex.com/app/apiKeys) for your
    BitMEX account, set the `BASE_URL` and start trading!
 
 Operation Overview
@@ -129,3 +130,9 @@ Compatibility
 -------------
 
 This module supports Python 3.5 and later.
+
+See also
+--------
+
+BitMEX has a Python [REST client](https://github.com/BitMEX/api-connectors/tree/master/official-http/python-swaggerpy)
+and [websocket client.](https://github.com/BitMEX/api-connectors/tree/master/official-ws/python)

@@ -1,9 +1,11 @@
 from __future__ import absolute_import
+
+import importlib
 import os
 import sys
+
 from market_maker.utils.dotdict import dotdict
 import market_maker._settings_base as baseSettings
-from imp import reload
 
 
 def import_path(fullpath):
@@ -14,12 +16,13 @@ def import_path(fullpath):
     path, filename = os.path.split(fullpath)
     filename, ext = os.path.splitext(filename)
     sys.path.insert(0, path)
-    module = __import__(filename)
-    reload(module)  # Might be out of date
+    module = importlib.import_module(filename, path)
+    importlib.reload(module)  # Might be out of date
     del sys.path[0]
     return module
 
-userSettings = import_path(os.path.join('..', 'settings'))
+
+userSettings = import_path(os.path.join('.', 'settings'))
 symbolSettings = None
 symbol = sys.argv[1] if len(sys.argv) > 1 else None
 if symbol:
