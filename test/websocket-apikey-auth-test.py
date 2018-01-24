@@ -1,5 +1,10 @@
+import hashlib
+import hmac
+import json
+import time
+import urllib
+
 from websocket import create_connection
-import json, base64, hashlib, urlparse, hmac, time
 
 ###
 # websocket-apikey-auth-test.py
@@ -96,15 +101,15 @@ def bitmex_signature(apiSecret, verb, url, nonce, postdict=None):
         # separators remove spaces from json
         # BitMEX expects signatures from JSON built without spaces
         data = json.dumps(postdict, separators=(',', ':'))
-    parsedURL = urlparse.urlparse(url)
+    parsedURL = urllib.parse.urlparse(url)
     path = parsedURL.path
     if parsedURL.query:
         path = path + '?' + parsedURL.query
     # print("Computing HMAC: %s" % verb + path + str(nonce) + data)
-    message = bytes(verb + path + str(nonce) + data).encode('utf-8')
+    message = (verb + path + str(nonce) + data).encode('utf-8')
     print("Signing: %s" % str(message))
 
-    signature = hmac.new(apiSecret, message, digestmod=hashlib.sha256).hexdigest()
+    signature = hmac.new(apiSecret.encode('utf-8'), message, digestmod=hashlib.sha256).hexdigest()
     print("Signature: %s" % signature)
     return signature
 
