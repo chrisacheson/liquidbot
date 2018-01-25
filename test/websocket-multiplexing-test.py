@@ -1,5 +1,12 @@
+import codecs
+import hashlib
+import hmac
+import json
+import time
+import urllib
+import uuid
+
 from websocket import create_connection
-import json, base64, hashlib, urlparse, hmac, time, uuid
 
 ###
 # websocket-apikey-auth-test.py
@@ -32,18 +39,16 @@ def test_with_message():
     # Initial connection - BitMEX sends a welcome message.
     print("Connecting to " + BITMEX_URL + ENDPOINT)
     ws = create_connection(BITMEX_URL + ENDPOINT)
-    print("Receiving Welcome Message...")
-    result = ws.recv()
-    print("Received '%s'" % result)
-    connID = json.loads(result[1:])['sid']
 
     # Open multiplexed connections.
-    for key, secret in KEYS.iteritems():
+    for key, secret in KEYS.items():
         # This is up to you, most use microtime but you may have your own scheme so long as it's increasing
         # and doesn't repeat.
         nonce = int(round(time.time() * 1000))
         # See signature generation reference at https://www.bitmex.com/app/apiKeys
         signature = bitmex_signature(secret, VERB, AUTH_ENDPOINT, nonce)
+
+        connID = random_id()
 
         # Open a new multiplexed connection.
         # See https://github.com/cayasso/primus-multiplex for more details
@@ -54,9 +59,13 @@ def test_with_message():
         request = [1, connID, channelName]
         print(json.dumps(request))
         ws.send(json.dumps(request))
+
+        request = [0, connID, channelName, {'op': 'authKey', 'args': [key, nonce, signature]}]
+        print('sending auth request: {}'.format(json.dumps(request)))
+        ws.send(json.dumps(request))
         print("Sent Auth request")
         result = ws.recv()
-        print("Received '%s'" % result)
+        print('Received {}'.format(result))
 
         # Send a request that requires authorization on this multiplexed connection.
         op = {"op":"subscribe", "args":"position"}
@@ -72,8 +81,8 @@ def test_with_message():
 
 
 # Generates a random ID.
-def id():
-    return uuid.uuid4().bytes.encode('base64').rstrip('=\n')
+def random_id():
+    return codecs.encode(uuid.uuid4().bytes, 'base64').rstrip(b'=\n').decode('utf-8')
 
 
 # Generates an API signature.
@@ -87,15 +96,16 @@ def bitmex_signature(apiSecret, verb, url, nonce, postdict=None):
         # separators remove spaces from json
         # BitMEX expects signatures from JSON built without spaces
         data = json.dumps(postdict, separators=(',', ':'))
-    parsedURL = urlparse.urlparse(url)
+    parsedURL = urllib.parse.urlparse(url)
     path = parsedURL.path
     if parsedURL.query:
         path = path + '?' + parsedURL.query
     # print("Computing HMAC: %s" % verb + path + str(nonce) + data)
-    message = bytes(verb + path + str(nonce) + data).encode('utf-8')
+    message = (verb + path + str(nonce) + data).encode('utf-8')
 
-    signature = hmac.new(apiSecret, message, digestmod=hashlib.sha256).hexdigest()
+    signature = hmac.new(apiSecret.encode('utf-8'), message, digestmod=hashlib.sha256).hexdigest()
     return signature
+
 
 if __name__ == "__main__":
     main()
