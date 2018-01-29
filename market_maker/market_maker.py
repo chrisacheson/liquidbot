@@ -228,9 +228,6 @@ class OrderManager:
         # Create orders and converge.
         self.place_orders()
 
-        if settings.DRY_RUN:
-            sys.exit()
-
     def print_status(self):
         """Print the current MM status."""
 
