@@ -1,5 +1,4 @@
-BitMEX Market Maker
-===================
+# BitMEX Market Maker
 
 This is a sample market making bot for use with [BitMEX](https://www.bitmex.com).
 
@@ -11,7 +10,7 @@ It is free to use and modify for your own strategies. It provides the following:
   * Withdrawals may be requested (but they still must be confirmed via email and 2FA).
   * Connection errors and WebSocket reconnection is handled for you.
   * [Permanent API Key](https://testnet.bitmex.com/app/apiKeys) support is included.
-* A scaffolding for building your own trading strategies.
+* [A scaffolding for building your own trading strategies.](#advanced-usage)
   * Out of the box, a simple market making strategy is implemented that blankets the bid and ask.
   * More complicated strategies are up to the user. Try incorporating [index data](https://testnet.bitmex.com/app/index/.XBT),
     query other markets to catch moves early, or develop your own completely custom strategy.
@@ -24,8 +23,7 @@ It is free to use and modify for your own strategies. It provides the following:
 > This is not a sophisticated market making program. It is intended to show the basics of market making while abstracting some
   of the rote work of interacting with the BitMEX API. It does not make smart decisions and will likely lose money.
 
-Getting Started
----------------
+## Getting Started
 
 1. Create a [Testnet BitMEX Account](https://testnet.bitmex.com) and [deposit some TBTC](https://testnet.bitmex.com/app/deposit).
 2. Install: `pip install bitmex-market-maker`
@@ -39,8 +37,7 @@ Getting Started
 6. Satisfied with your bot's performance? Create a [live API Key](https://www.bitmex.com/app/apiKeys) for your
    BitMEX account, set the `BASE_URL` and start trading!
 
-Operation Overview
-------------------
+## Operation Overview
 
 This market maker works on the following principles:
 
@@ -56,8 +53,7 @@ This market maker works on the following principles:
   - Extra orders are canceled.
 * The bot then prints details of contracts traded, tickers, and total delta.
 
-Simplified Output
------------------
+## Simplified Output
 
 The following is some of what you can expect when running this bot:
 
@@ -98,9 +94,7 @@ The following is some of what you can expect when running this bot:
 
 ```
 
-
-Advanced usage
---------------
+## Advanced usage
 
 You can implement custom trading strategies using the market maker. `market_maker.OrderManager'
 controls placing, updating, and monitoring orders on BitMEX. To implement your own custom
@@ -151,15 +145,13 @@ def place_orders(self) -> None:
 To run your strategy, call `run_loop()`:
 ```
 order_manager = CustomOrderManager()
-order_manager.init()
 order_manager.run_loop()
 ```
 
 Your custom strategy will run until you terminate the program with CTRL-C. There is an example
 in `custom_strategy.py`.
 
-Notes on Rate Limiting
-----------------------
+## Notes on Rate Limiting
 
 By default, the BitMEX API rate limit is 300 requests per 5 minute interval (avg 1/second).
 
@@ -176,8 +168,7 @@ If you are quoting multiple contracts and your ratelimit is becoming an obstacle
 [email support](mailto:support@bitmex.com) with details of your quoting. In the vast majority of cases,
 we are able to raise a user's ratelimit without issue.
 
-Troubleshooting
----------------
+## Troubleshooting
 
 Common errors we've seen:
 
@@ -185,13 +176,11 @@ Common errors we've seen:
   * This is caused by an outdated version of `requests`. Run `pip install -U requests` to update.
 
 
-Compatibility
--------------
+## Compatibility
 
 This module supports Python 3.5 and later.
 
-See also
---------
+## See also
 
 BitMEX has a Python [REST client](https://github.com/BitMEX/api-connectors/tree/master/official-http/python-swaggerpy)
 and [websocket client.](https://github.com/BitMEX/api-connectors/tree/master/official-ws/python)
