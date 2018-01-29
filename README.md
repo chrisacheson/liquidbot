@@ -99,6 +99,65 @@ The following is some of what you can expect when running this bot:
 ```
 
 
+Advanced usage
+--------------
+
+You can implement custom trading strategies using the market maker. `market_maker.OrderManager'
+controls placing, updating, and monitoring orders on BitMEX. To implement your own custom
+strategy, subclass `market_maker.OrderManager` and override `OrderManager.place_orders()`:
+
+```
+from market_maker.market_maker import OrderManager
+
+class CustomOrderManager(OrderManager):
+    def place_orders(self) -> None:
+        # implement your custom strategy here
+```
+
+Your strategy should provide a set of orders. An order is a dict containing price, quantity, and
+whether the order is buy or sell. For example:
+
+```
+buy_order = {
+    'price': 1234.5, # float
+    'orderQty': 100, # int
+    'side': 'Buy'
+}
+
+sell_order = {
+    'price': 9876.5, # float
+    'orderQty': 100, # int
+    'side': 'Sell'
+}
+```
+
+Call `self.converge_orders()` to submit your orders. `converge_orders()` will create, amend,
+and delete orders on BitMEX as necessary to match what you pass in:
+
+```
+def place_orders(self) -> None:
+    buy_orders = []
+    sell_orders = []
+
+    # populate buy and sell orders, e.g.
+    buy_orders.append({'price': 998.0, 'orderQty': 100, 'side': "Buy"})
+    buy_orders.append({'price': 999.0, 'orderQty': 100, 'side': "Buy"})
+    sell_orders.append({'price': 1000.0, 'orderQty': 100, 'side': "Sell"})
+    sell_orders.append({'price': 1001.0, 'orderQty': 100, 'side': "Sell"})
+
+    self.converge_orders(buy_orders, sell_orders)
+```
+
+To run your strategy, call `init()` and `run_loop()`:
+```
+order_manager = CustomOrderManager()
+order_manager.init()
+order_manager.run_loop()
+```
+
+Your custom strategy will run until you terminate the program with CTRL-C. There is an example
+in `custom_strategy.py`.
+
 Notes on Rate Limiting
 ----------------------
 
