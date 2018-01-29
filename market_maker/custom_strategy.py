@@ -24,7 +24,6 @@ def run() -> None:
 
     # Try/except just keeps ctrl-c from printing an ugly stacktrace
     try:
-        order_manager.init()
         order_manager.run_loop()
     except (KeyboardInterrupt, SystemExit):
         sys.exit()

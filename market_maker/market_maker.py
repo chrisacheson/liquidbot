@@ -208,7 +208,6 @@ class OrderManager:
 
         logger.info("Using symbol %s." % self.exchange.symbol)
 
-    def init(self):
         if settings.DRY_RUN:
             logger.info("Initializing dry run. Orders printed below represent what would be posted to BitMEX.")
         else:
@@ -544,7 +543,6 @@ def run():
     om = OrderManager()
     # Try/except just keeps ctrl-c from printing an ugly stacktrace
     try:
-        om.init()
         om.run_loop()
     except (KeyboardInterrupt, SystemExit):
         sys.exit()

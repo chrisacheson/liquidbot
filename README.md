@@ -148,7 +148,7 @@ def place_orders(self) -> None:
     self.converge_orders(buy_orders, sell_orders)
 ```
 
-To run your strategy, call `init()` and `run_loop()`:
+To run your strategy, call `run_loop()`:
 ```
 order_manager = CustomOrderManager()
 order_manager.init()
