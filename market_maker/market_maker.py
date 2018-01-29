@@ -422,14 +422,14 @@ class OrderManager:
     ###
 
     def short_position_limit_exceeded(self):
-        "Returns True if the short position limit is exceeded"
+        """Returns True if the short position limit is exceeded"""
         if not settings.CHECK_POSITION_LIMITS:
             return False
         position = self.exchange.get_delta()
         return position <= settings.MIN_POSITION
 
     def long_position_limit_exceeded(self):
-        "Returns True if the long position limit is exceeded"
+        """Returns True if the long position limit is exceeded"""
         if not settings.CHECK_POSITION_LIMITS:
             return False
         position = self.exchange.get_delta()
@@ -459,7 +459,7 @@ class OrderManager:
             logger.error("Sanity check failed, exchange data is inconsistent")
             self.exit()
 
-        # Messanging if the position limits are reached
+        # Messaging if the position limits are reached
         if self.long_position_limit_exceeded():
             logger.info("Long delta limit exceeded")
             logger.info("Current Position: %.f, Maximum Position: %.f" %
