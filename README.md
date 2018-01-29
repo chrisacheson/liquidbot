@@ -34,7 +34,7 @@ Getting Started
     * Modify `settings.py` to tune parameters.
 4. Edit settings.py to add your [BitMEX API Key and Secret](https://testnet.bitmex.com/app/apiKeys) and change bot parameters.
     * Note that user/password authentication is not supported.
-    * Run with DRY_RUN=True to test cost and spread.
+    * Run with `DRY_RUN=True` to test cost and spread.
 5. Run it: `marketmaker [symbol]`
 6. Satisfied with your bot's performance? Create a [live API Key](https://www.bitmex.com/app/apiKeys) for your
    BitMEX account, set the `BASE_URL` and start trading!
@@ -44,11 +44,11 @@ Operation Overview
 
 This market maker works on the following principles:
 
-* The MM tracks the last `bidPrice` and `askPrice` of the quoted instrument to determine where to start quoting.
-* Based on parameters set the user, the bot creates a descriptions of orders it would like to place.
+* The market maker tracks the last `bidPrice` and `askPrice` of the quoted instrument to determine where to start quoting.
+* Based on parameters set by the user, the bot creates a descriptions of orders it would like to place.
   - If `settings.MAINTAIN_SPREADS` is set, the bot will start inside the current spread and work outwards.
   - Otherwise, spread is determined by interval calculations.
-* If the user specified position limits, these are checked. If the current position is beyond a limit,
+* If the user specifies position limits, these are checked. If the current position is beyond a limit,
   the bot stops quoting that side of the market.
 * These order descriptors are compared with what the bot has currently placed in the market.
   - If an existing order can be amended to the desired value, it is amended.
