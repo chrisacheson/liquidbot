@@ -96,7 +96,7 @@ The following is some of what you can expect when running this bot:
 
 ## Advanced usage
 
-You can implement custom trading strategies using the market maker. `market_maker.OrderManager'
+You can implement custom trading strategies using the market maker. `market_maker.OrderManager`
 controls placing, updating, and monitoring orders on BitMEX. To implement your own custom
 strategy, subclass `market_maker.OrderManager` and override `OrderManager.place_orders()`:
 
