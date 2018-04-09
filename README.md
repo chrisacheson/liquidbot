@@ -26,7 +26,7 @@ It is free to use and modify for your own strategies. It provides the following:
 ## Getting Started
 
 1. Create a [Testnet BitMEX Account](https://testnet.bitmex.com) and [deposit some TBTC](https://testnet.bitmex.com/app/deposit).
-2. Install: `pip install bitmex-market-maker`
+2. Install: `pip install bitmex-market-maker`. It is strongly recommeded to use a virtualenv.
 3. Create a marketmaker project: run `marketmaker setup`
     * This will create `settings.py` and `market_maker/` in the working directory.
     * Modify `settings.py` to tune parameters.
