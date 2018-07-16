@@ -35,9 +35,9 @@ def main():
 def test_with_message():
     # This is up to you, most use microtime but you may have your own scheme so long as it's increasing
     # and doesn't repeat.
-    nonce = int(round(time.time() * 1000))
+    expires = int(time.time()) + 5
     # See signature generation reference at https://www.bitmex.com/app/apiKeys
-    signature = bitmex_signature(API_SECRET, VERB, ENDPOINT, nonce)
+    signature = bitmex_signature(API_SECRET, VERB, ENDPOINT, expires)
 
     # Initial connection - BitMEX sends a welcome message.
     ws = create_connection(BITMEX_URL + ENDPOINT)
@@ -46,7 +46,7 @@ def test_with_message():
     print("Received '%s'" % result)
 
     # Send API Key with signed message.
-    request = {"op": "authKey", "args": [API_KEY, nonce, signature]}
+    request = {"op": "authKey", "args": [API_KEY, expires, signature]}
     ws.send(json.dumps(request))
     print("Sent Auth request")
     result = ws.recv()
@@ -67,13 +67,13 @@ def test_with_message():
 def test_with_querystring():
     # This is up to you, most use microtime but you may have your own scheme so long as it's increasing
     # and doesn't repeat.
-    nonce = int(round(time.time() * 1000))
+    expires = int(time.time()) + 5
     # See signature generation reference at https://www.bitmex.com/app/apiKeys
-    signature = bitmex_signature(API_SECRET, VERB, ENDPOINT, nonce)
+    signature = bitmex_signature(API_SECRET, VERB, ENDPOINT, expires)
 
     # Initial connection - BitMEX sends a welcome message.
     ws = create_connection(BITMEX_URL + ENDPOINT +
-                           "?api-nonce=%s&api-signature=%s&api-key=%s" % (nonce, signature, API_KEY))
+                           "?api-expires=%s&api-signature=%s&api-key=%s" % (expires, signature, API_KEY))
     print("Receiving Welcome Message...")
     result = ws.recv()
     print("Received '%s'" % result)
