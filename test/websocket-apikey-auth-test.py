@@ -46,7 +46,7 @@ def test_with_message():
     print("Received '%s'" % result)
 
     # Send API Key with signed message.
-    request = {"op": "authKey", "args": [API_KEY, expires, signature]}
+    request = {"op": "authKeyExpires", "args": [API_KEY, expires, signature]}
     ws.send(json.dumps(request))
     print("Sent Auth request")
     result = ws.recv()
