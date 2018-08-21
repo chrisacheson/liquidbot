@@ -284,14 +284,14 @@ class BitMEX(object):
                                   "Request: %s \n %s" % (url, json.dumps(postdict)))
                 exit_or_throw(e)
 
-            # 429, ratelimit; cancel orders & wait until X-Ratelimit-Reset
+            # 429, ratelimit; cancel orders & wait until X-RateLimit-Reset
             elif response.status_code == 429:
                 self.logger.error("Ratelimited on current request. Sleeping, then trying again. Try fewer " +
                                   "order pairs or contact support@bitmex.com to raise your limits. " +
                                   "Request: %s \n %s" % (url, json.dumps(postdict)))
 
                 # Figure out how long we need to wait.
-                ratelimit_reset = response.headers['X-Ratelimit-Reset']
+                ratelimit_reset = response.headers['X-RateLimit-Reset']
                 to_sleep = int(ratelimit_reset) - int(time.time())
                 reset_str = datetime.datetime.fromtimestamp(int(ratelimit_reset)).strftime('%X')
 
