@@ -20,16 +20,16 @@ class APIKeyAuth(AuthBase):
     def __call__(self, r):
         """Called when forming a request - generates api key headers."""
         # modify and return the request
-        nonce = generate_nonce()
-        r.headers['api-nonce'] = str(nonce)
+        nonce = generate_expires()
+        r.headers['api-expires'] = str(nonce)
         r.headers['api-key'] = self.apiKey
         r.headers['api-signature'] = generate_signature(self.apiSecret, r.method, r.url, nonce, r.body or '')
 
         return r
 
 
-def generate_nonce():
-    return int(round(time.time() * 1000))
+def generate_expires():
+    return int(time.time() + 3600)
 
 
 # Generates an API signature.

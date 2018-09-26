@@ -8,7 +8,7 @@ import json
 import decimal
 import logging
 from market_maker.settings import settings
-from market_maker.auth.APIKeyAuth import generate_nonce, generate_signature
+from market_maker.auth.APIKeyAuth import generate_expires, generate_signature
 from market_maker.utils.log import setup_custom_logger
 from market_maker.utils.math import toNearest
 from future.utils import iteritems
@@ -183,9 +183,9 @@ class BitMEXWebsocket():
         self.logger.info("Authenticating with API Key.")
         # To auth to the WS using an API key, we generate a signature of a nonce and
         # the WS API endpoint.
-        nonce = generate_nonce()
+        nonce = generate_expires()
         return [
-            "api-nonce: " + str(nonce),
+            "api-expires: " + str(nonce),
             "api-signature: " + generate_signature(settings.API_SECRET, 'GET', '/realtime', nonce, ''),
             "api-key:" + settings.API_KEY
         ]
