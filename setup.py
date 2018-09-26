@@ -13,6 +13,7 @@ setup(name='bitmex-market-maker',
       description='Market making bot for BitMEX API',
       url='https://github.com/BitMEX/sample-market-maker',
       long_description=open(join(here, 'README.md')).read(),
+      long_description_content_type='text/markdown',
       author='Samuel Reed',
       author_email='sam@bitmex.com',
       install_requires=[
