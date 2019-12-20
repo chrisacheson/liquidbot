@@ -296,7 +296,7 @@ class BitMEXWebsocket():
         self.logger.info('Websocket Closed')
         self.exit()
 
-    def __on_error(self, ws, error):
+    def __on_error(self, error):
         if not self.exited:
             self.error(error)
 
