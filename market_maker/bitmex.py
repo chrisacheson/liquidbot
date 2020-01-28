@@ -6,10 +6,11 @@ import datetime
 import json
 import base64
 import uuid
-import logging
 from market_maker.auth import APIKeyAuthWithExpires
-from market_maker.utils import constants, errors
+from market_maker.utils import constants, errors, log
 from market_maker.ws.ws_thread import BitMEXWebsocket
+
+logger = log.setup_custom_logger('root')
 
 
 # https://www.bitmex.com/api/explorer/
@@ -20,7 +21,6 @@ class BitMEX(object):
     def __init__(self, base_url=None, symbol=None, apiKey=None, apiSecret=None,
                  orderIDPrefix='mm_bitmex_', shouldWSAuth=True, postOnly=False, timeout=7):
         """Init connector."""
-        self.logger = logging.getLogger('root')
         self.base_url = base_url
         self.symbol = symbol
         self.postOnly = postOnly
@@ -255,7 +255,7 @@ class BitMEX(object):
         # Make the request
         response = None
         try:
-            self.logger.info("sending req to %s: %s" % (url, json.dumps(postdict or query or '')))
+            logger.info("sending req to %s: %s" % (url, json.dumps(postdict or query or '')))
             req = requests.Request(verb, url, json=postdict, auth=auth, params=query)
             prepped = self.session.prepare_request(req)
             response = self.session.send(prepped, timeout=timeout)
@@ -268,25 +268,25 @@ class BitMEX(object):
 
             # 401 - Auth error. This is fatal.
             if response.status_code == 401:
-                self.logger.error("API Key or Secret incorrect, please check and restart.")
-                self.logger.error("Error: " + response.text)
+                logger.error("API Key or Secret incorrect, please check and restart.")
+                logger.error("Error: " + response.text)
                 if postdict:
-                    self.logger.error(postdict)
+                    logger.error(postdict)
                 # Always exit, even if rethrow_errors, because this is fatal
                 exit(1)
 
             # 404, can be thrown if order canceled or does not exist.
             elif response.status_code == 404:
                 if verb == 'DELETE':
-                    self.logger.error("Order not found: %s" % postdict['orderID'])
+                    logger.error("Order not found: %s" % postdict['orderID'])
                     return
-                self.logger.error("Unable to contact the BitMEX API (404). " +
+                logger.error("Unable to contact the BitMEX API (404). " +
                                   "Request: %s \n %s" % (url, json.dumps(postdict)))
                 exit_or_throw(e)
 
             # 429, ratelimit; cancel orders & wait until X-RateLimit-Reset
             elif response.status_code == 429:
-                self.logger.error("Ratelimited on current request. Sleeping, then trying again. Try fewer " +
+                logger.error("Ratelimited on current request. Sleeping, then trying again. Try fewer " +
                                   "order pairs or contact support@bitmex.com to raise your limits. " +
                                   "Request: %s \n %s" % (url, json.dumps(postdict)))
 
@@ -296,10 +296,10 @@ class BitMEX(object):
                 reset_str = datetime.datetime.fromtimestamp(int(ratelimit_reset)).strftime('%X')
 
                 # We're ratelimited, and we may be waiting for a long time. Cancel orders.
-                self.logger.warning("Canceling all known orders in the meantime.")
+                logger.warning("Canceling all known orders in the meantime.")
                 self.cancel([o['orderID'] for o in self.open_orders()])
 
-                self.logger.error("Your ratelimit will reset at %s. Sleeping for %d seconds." % (reset_str, to_sleep))
+                logger.error("Your ratelimit will reset at %s. Sleeping for %d seconds." % (reset_str, to_sleep))
                 time.sleep(to_sleep)
 
                 # Retry the request.
@@ -307,7 +307,7 @@ class BitMEX(object):
 
             # 503 - BitMEX temporary downtime, likely due to a deploy. Try again
             elif response.status_code == 503:
-                self.logger.warning("Unable to contact the BitMEX API (503), retrying. " +
+                logger.warning("Unable to contact the BitMEX API (503), retrying. " +
                                     "Request: %s \n %s" % (url, json.dumps(postdict)))
                 time.sleep(3)
                 return retry()
@@ -336,22 +336,22 @@ class BitMEX(object):
                     return orderResults
 
                 elif 'insufficient available balance' in message:
-                    self.logger.error('Account out of funds. The message: %s' % error['message'])
+                    logger.error('Account out of funds. The message: %s' % error['message'])
                     exit_or_throw(Exception('Insufficient Funds'))
 
 
             # If we haven't returned or re-raised yet, we get here.
-            self.logger.error("Unhandled Error: %s: %s" % (e, response.text))
-            self.logger.error("Endpoint was: %s %s: %s" % (verb, path, json.dumps(postdict)))
+            logger.error("Unhandled Error: %s: %s" % (e, response.text))
+            logger.error("Endpoint was: %s %s: %s" % (verb, path, json.dumps(postdict)))
             exit_or_throw(e)
 
         except requests.exceptions.Timeout as e:
             # Timeout, re-run this request
-            self.logger.warning("Timed out on request: %s (%s), retrying..." % (path, json.dumps(postdict or '')))
+            logger.warning("Timed out on request: %s (%s), retrying..." % (path, json.dumps(postdict or '')))
             return retry()
 
         except requests.exceptions.ConnectionError as e:
-            self.logger.warning("Unable to contact the BitMEX API (%s). Please check the URL. Retrying. " +
+            logger.warning("Unable to contact the BitMEX API (%s). Please check the URL. Retrying. " +
                                 "Request: %s %s \n %s" % (e, url, json.dumps(postdict)))
             time.sleep(1)
             return retry()

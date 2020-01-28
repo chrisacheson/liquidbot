@@ -9,12 +9,15 @@ import decimal
 import logging
 from market_maker.settings import settings
 from market_maker.auth.APIKeyAuth import generate_expires, generate_signature
-from market_maker.utils.log import setup_custom_logger
+from market_maker.utils import log
 from market_maker.utils.math import toNearest
 from future.utils import iteritems
 from future.standard_library import hooks
 with hooks():  # Python 2/3 compat
     from urllib.parse import urlparse, urlunparse
+
+
+logger = log.setup_custom_logger('root')
 
 
 # Connects to BitMEX websocket for streaming realtime data.
@@ -31,7 +34,6 @@ class BitMEXWebsocket():
     MAX_TABLE_LEN = 200
 
     def __init__(self):
-        self.logger = logging.getLogger('root')
         self.__reset()
 
     def __del__(self):
@@ -40,7 +42,7 @@ class BitMEXWebsocket():
     def connect(self, endpoint="", symbol="XBTN15", shouldAuth=True):
         '''Connect to the websocket and initialize data stores.'''
 
-        self.logger.debug("Connecting WebSocket.")
+        logger.debug("Connecting WebSocket.")
         self.symbol = symbol
         self.shouldAuth = shouldAuth
 
@@ -57,15 +59,15 @@ class BitMEXWebsocket():
         urlParts[0] = urlParts[0].replace('http', 'ws')
         urlParts[2] = "/realtime?subscribe=" + ",".join(subscriptions)
         wsURL = urlunparse(urlParts)
-        self.logger.info("Connecting to %s" % wsURL)
+        logger.info("Connecting to %s" % wsURL)
         self.__connect(wsURL)
-        self.logger.info('Connected to WS. Waiting for data images, this may take a moment...')
+        logger.info('Connected to WS. Waiting for data images, this may take a moment...')
 
         # Connected. Wait for partials
         self.__wait_for_symbol(symbol)
         if self.shouldAuth:
             self.__wait_for_account()
-        self.logger.info('Got all market data. Starting.')
+        logger.info('Got all market data. Starting.')
 
     #
     # Data methods
@@ -132,7 +134,7 @@ class BitMEXWebsocket():
     #
     def error(self, err):
         self._error = err
-        self.logger.error(err)
+        logger.error(err)
         self.exit()
 
     def exit(self):
@@ -145,7 +147,7 @@ class BitMEXWebsocket():
 
     def __connect(self, wsURL):
         '''Connect to the websocket in a thread.'''
-        self.logger.debug("Starting thread")
+        logger.debug("Starting thread")
 
         ssl_defaults = ssl.get_default_verify_paths()
         sslopt_ca_certs = {'ca_certs': ssl_defaults.cafile}
@@ -157,11 +159,10 @@ class BitMEXWebsocket():
                                          header=self.__get_auth()
                                          )
 
-        setup_custom_logger('websocket', log_level=settings.LOG_LEVEL)
         self.wst = threading.Thread(target=lambda: self.ws.run_forever(sslopt=sslopt_ca_certs))
         self.wst.daemon = True
         self.wst.start()
-        self.logger.info("Started thread")
+        logger.info("Started thread")
 
         # Wait for connect before continuing
         conn_timeout = 5
@@ -170,7 +171,7 @@ class BitMEXWebsocket():
             conn_timeout -= 1
 
         if not conn_timeout or self._error:
-            self.logger.error("Couldn't connect to WS! Exiting.")
+            logger.error("Couldn't connect to WS! Exiting.")
             self.exit()
             sys.exit(1)
 
@@ -180,7 +181,7 @@ class BitMEXWebsocket():
         if self.shouldAuth is False:
             return []
 
-        self.logger.info("Authenticating with API Key.")
+        logger.info("Authenticating with API Key.")
         # To auth to the WS using an API key, we generate a signature of a nonce and
         # the WS API endpoint.
         nonce = generate_expires()
@@ -208,14 +209,14 @@ class BitMEXWebsocket():
     def __on_message(self, message):
         '''Handler for parsing WS messages.'''
         message = json.loads(message)
-        self.logger.debug(json.dumps(message))
+        logger.debug(json.dumps(message))
 
         table = message['table'] if 'table' in message else None
         action = message['action'] if 'action' in message else None
         try:
             if 'subscribe' in message:
                 if message['success']:
-                    self.logger.debug("Subscribed to %s." % message['subscribe'])
+                    logger.debug("Subscribed to %s." % message['subscribe'])
                 else:
                     self.error("Unable to subscribe to %s. Error: \"%s\" Please check and restart." %
                                (message['request']['args'][0], message['error']))
@@ -238,13 +239,13 @@ class BitMEXWebsocket():
                 # 'update'  - update row
                 # 'delete'  - delete row
                 if action == 'partial':
-                    self.logger.debug("%s: partial" % table)
+                    logger.debug("%s: partial" % table)
                     self.data[table] += message['data']
                     # Keys are communicated on partials to let you know how to uniquely identify
                     # an item. We use it for updates.
                     self.keys[table] = message['keys']
                 elif action == 'insert':
-                    self.logger.debug('%s: inserting %s' % (table, message['data']))
+                    logger.debug('%s: inserting %s' % (table, message['data']))
                     self.data[table] += message['data']
 
                     # Limit the max length of the table to avoid excessive memory usage.
@@ -253,7 +254,7 @@ class BitMEXWebsocket():
                         self.data[table] = self.data[table][(BitMEXWebsocket.MAX_TABLE_LEN // 2):]
 
                 elif action == 'update':
-                    self.logger.debug('%s: updating %s' % (table, message['data']))
+                    logger.debug('%s: updating %s' % (table, message['data']))
                     # Locate the item in the collection and update it.
                     for updateData in message['data']:
                         item = findItemByKeys(self.keys[table], self.data[table], updateData)
@@ -267,7 +268,7 @@ class BitMEXWebsocket():
                                 contExecuted = updateData['cumQty'] - item['cumQty']
                                 if contExecuted > 0:
                                     instrument = self.get_instrument(item['symbol'])
-                                    self.logger.info("Execution: %s %d Contracts of %s at %.*f" %
+                                    logger.info("Execution: %s %d Contracts of %s at %.*f" %
                                              (item['side'], contExecuted, item['symbol'],
                                               instrument['tickLog'], item['price']))
 
@@ -279,7 +280,7 @@ class BitMEXWebsocket():
                             self.data[table].remove(item)
 
                 elif action == 'delete':
-                    self.logger.debug('%s: deleting %s' % (table, message['data']))
+                    logger.debug('%s: deleting %s' % (table, message['data']))
                     # Locate the item in the collection and remove it.
                     for deleteData in message['data']:
                         item = findItemByKeys(self.keys[table], self.data[table], deleteData)
@@ -287,13 +288,13 @@ class BitMEXWebsocket():
                 else:
                     raise Exception("Unknown action: %s" % action)
         except:
-            self.logger.error(traceback.format_exc())
+            logger.error(traceback.format_exc())
 
     def __on_open(self):
-        self.logger.debug("Websocket Opened.")
+        logger.debug("Websocket Opened.")
 
     def __on_close(self):
-        self.logger.info('Websocket Closed')
+        logger.info('Websocket Closed')
         self.exit()
 
     def __on_error(self, error):
@@ -318,16 +319,8 @@ def findItemByKeys(keys, table, matchData):
 
 if __name__ == "__main__":
     # create console handler and set level to debug
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    # create formatter
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    # add formatter to ch
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
+    logger = log.setup_custom_logger('websocket', logging.DEBUG)
     ws = BitMEXWebsocket()
-    ws.logger = logger
     ws.connect("https://testnet.bitmex.com/api/v1")
     while(ws.ws.sock.connected):
         sleep(1)
