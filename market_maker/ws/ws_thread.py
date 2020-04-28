@@ -269,7 +269,7 @@ class BitMEXWebsocket():
                                     instrument = self.get_instrument(item['symbol'])
                                     self.logger.info("Execution: %s %d Contracts of %s at %.*f" %
                                              (item['side'], contExecuted, item['symbol'],
-                                              instrument['tickLog'], item['price']))
+                                              instrument['tickLog'], item['price'] or updateData['price']))
 
                         # Update this item.
                         item.update(updateData)
