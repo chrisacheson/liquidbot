@@ -11,7 +11,7 @@ dev:
 	python setup.py develop
 
 publish: clean build
-	twine upload $(DIST)/*
+	python -m twine upload $(DIST)/*
 
 publish-test: clean build
-	twine upload -r pypitest $(DIST)/*
+	python -m twine upload -r pypitest $(DIST)/*
