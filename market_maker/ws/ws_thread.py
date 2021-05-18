@@ -65,6 +65,7 @@ class BitMEXWebsocket():
 
         # Connected. Wait for partials
         self.__wait_for_symbol(symbol)
+        logger.info("%s received. Waiting for account...", symbol)
         if self.shouldAuth:
             self.__wait_for_account()
         logger.info('Got all market data. Starting.')
@@ -199,7 +200,7 @@ class BitMEXWebsocket():
 
     def __wait_for_symbol(self, symbol):
         '''On subscribe, this data will come down. Wait for it.'''
-        while not {'instrument', 'trade', 'quote'} <= set(self.data):
+        while not {'instrument', 'quote'} <= set(self.data):
             sleep(0.1)
 
     def __send_command(self, command, args):
