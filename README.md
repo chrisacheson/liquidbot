@@ -155,14 +155,7 @@ in `custom_strategy.py`.
 
 By default, the BitMEX API rate limit is 300 requests per 5 minute interval (avg 1/second).
 
-This bot uses the WebSocket and bulk order placement/amend to greatly reduce the number of calls sent to the BitMEX API.
-
-Most calls to the API consume one request, except:
-
-* Bulk order placement/amend: Consumes 0.1 requests, rounded up, per order. For example, placing 16 orders consumes
-  2 requests.
-* Bulk order cancel: Consumes 1 request no matter the size. Is not blocked by an exceeded ratelimit; cancels will
-  always succeed. This bot will always cancel all orders on an error or interrupt.
+This bot uses the WebSocket to greatly reduce the number of calls sent to the BitMEX API.
 
 If you are quoting multiple contracts and your ratelimit is becoming an obstacle, please
 [email support](mailto:support@bitmex.com) with details of your quoting. In the vast majority of cases,
