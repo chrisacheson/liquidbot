@@ -182,17 +182,17 @@ class ExchangeInterface:
         if instrument['midPrice'] is None:
             raise errors.MarketEmptyError("Orderbook is empty, cannot quote")
 
-    def amend_bulk_orders(self, orders):
+    def amend_orders(self, orders):
         if self.dry_run:
             return orders
-        return self.bitmex.amend_bulk_orders(orders)
+        return self.bitmex.amend_orders(orders)
 
-    def create_bulk_orders(self, orders):
+    def create_orders(self, orders):
         if self.dry_run:
             return orders
-        return self.bitmex.create_bulk_orders(orders)
+        return self.bitmex.create_orders(orders)
 
-    def cancel_bulk_orders(self, orders):
+    def cancel_orders(self, orders):
         if self.dry_run:
             return orders
         return self.bitmex.cancel([order['orderID'] for order in orders])
@@ -393,7 +393,7 @@ class OrderManager:
             # made it not amendable.
             # If that happens, we need to catch it and re-tick.
             try:
-                self.exchange.amend_bulk_orders(to_amend)
+                self.exchange.amend_orders(to_amend)
             except requests.exceptions.HTTPError as e:
                 errorObj = e.response.json()
                 if errorObj['error']['message'] == 'Invalid ordStatus':
@@ -408,14 +408,14 @@ class OrderManager:
             logger.info("Creating %d orders:" % (len(to_create)))
             for order in reversed(to_create):
                 logger.info("%4s %d @ %.*f" % (order['side'], order['orderQty'], tickLog, order['price']))
-            self.exchange.create_bulk_orders(to_create)
+            self.exchange.create_orders(to_create)
 
         # Could happen if we exceed a delta limit
         if len(to_cancel) > 0:
             logger.info("Canceling %d orders:" % (len(to_cancel)))
             for order in reversed(to_cancel):
                 logger.info("%4s %d @ %.*f" % (order['side'], order['leavesQty'], tickLog, order['price']))
-            self.exchange.cancel_bulk_orders(to_cancel)
+            self.exchange.cancel_orders(to_cancel)
 
     ###
     # Position Limits
