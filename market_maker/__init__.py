@@ -4,7 +4,7 @@ import os
 import shutil
 
 
-__version__ = 'v1.5.1'
+__version__ = 'v1.6.0'
 
 
 def run():
