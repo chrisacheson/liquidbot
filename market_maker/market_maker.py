@@ -215,7 +215,6 @@ class OrderManager:
 
         self.start_time = datetime.now()
         self.instrument = self.exchange.get_instrument()
-        print(self.instrument)
         if settings.ORDER_START_SIZE % self.instrument['lotSize'] != 0 or settings.ORDER_START_SIZE < self.instrument['lotSize']:
             print(f"Invalid ORDER_START_SIZE, must be divisible by lotSize of {self.exchange.symbol} instrument")
             print(f"Setting ORDER_START_SIZE to lotSize of {self.exchange.symbol}: {self.instrument['lotSize']}")
