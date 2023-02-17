@@ -129,53 +129,59 @@ class BitMEX(object):
         return self.position(self.symbol)['homeNotional']
 
     @authentication_required
-    def buy(self, quantity, price):
+    def buy(self, quantity, price, extra_attrs = {}):
         """Place a buy order.
 
         Returns order object. ID: orderID
         """
-        return self.place_order(quantity, price)
+        return self.place_order(quantity, price, extra_attrs)
 
     @authentication_required
-    def sell(self, quantity, price):
+    def sell(self, quantity, price, extra_attrs = {}):
         """Place a sell order.
 
         Returns order object. ID: orderID
         """
-        return self.place_order(-quantity, price)
+        return self.place_order(-quantity, price, extra_attrs)
 
     @authentication_required
-    def place_order(self, quantity, price):
+    def place_order(self, quantity, price, extra_attrs = {}):
         """Place an order."""
         if price < 0:
             raise Exception("Price must be positive.")
 
-        endpoint = "order"
-        # Generate a unique clOrdID with our prefix so we can identify it.
-        clOrdID = self.orderIDPrefix + base64.b64encode(uuid.uuid4().bytes).decode('utf8').rstrip('=\n')
         postdict = {
             'symbol': self.symbol,
             'orderQty': quantity,
             'price': price,
-            'clOrdID': clOrdID
+            # Generate a unique clOrdID with our prefix so we can identify it.
+            'clOrdID': self.orderIDPrefix + base64.b64encode(uuid.uuid4().bytes).decode('utf8').rstrip('=\n')
         }
-        return self._curl_bitmex(path=endpoint, postdict=postdict, verb="POST")
+        if self.postOnly:
+            postdict['execInst'] = 'ParticipateDoNotInitiate'
+        postdict.update(extra_attrs);
+        return self._curl_bitmex(path="order", postdict=postdict, verb="POST")
 
     @authentication_required
-    def amend_orders(self, orders):
-        """Amend multiple orders."""
-        for order in orders:
-            self._curl_bitmex(path='order', postdict=order, verb='PUT', rethrow_errors=True)
+    def amend_order(self, order):
+        # Note rethrow; if this fails, we want to catch it and re-tick
+        return self._curl_bitmex(path='order', postdict=order, verb='PUT', rethrow_errors=True)
 
     @authentication_required
     def create_orders(self, orders):
         """Create multiple orders."""
+        results = []
         for order in orders:
-            order['clOrdID'] = self.orderIDPrefix + base64.b64encode(uuid.uuid4().bytes).decode('utf8').rstrip('=\n')
-            order['symbol'] = self.symbol
-            if self.postOnly:
-                order['execInst'] = 'ParticipateDoNotInitiate'
-            self._curl_bitmex(path='order', postdict=order, verb='POST',  rethrow_errors=True)
+            results.append(self.place_order(order['orderQty'], order['price'], order))
+        return results
+
+    @authentication_required
+    def amend_orders(self, orders):
+        """Amend multiple orders."""
+        results = []
+        for order in orders:
+            results.append(self.amend_order(order))
+        return results
 
     @authentication_required
     def open_orders(self):
@@ -255,7 +261,7 @@ class BitMEX(object):
         # Make the request
         response = None
         try:
-            logger.info("sending req to %s: %s" % (url, json.dumps(postdict or query or '')))
+            logger.info("sending req to %s %s: %s" % (verb, url, json.dumps(postdict or query or '')))
             req = requests.Request(verb, url, json=postdict, auth=auth, params=query)
             prepped = self.session.prepare_request(req)
             response = self.session.send(prepped, timeout=timeout)

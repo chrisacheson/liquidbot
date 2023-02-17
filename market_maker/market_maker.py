@@ -340,6 +340,8 @@ class OrderManager:
 
         if settings.RANDOM_ORDER_SIZE is True:
             quantity = random.randint(settings.MIN_ORDER_SIZE, settings.MAX_ORDER_SIZE)
+            # Respect lot size
+            quantity = round(quantity / settings.ORDER_STEP_SIZE) * settings.ORDER_STEP_SIZE
         else:
             quantity = settings.ORDER_START_SIZE + ((abs(index) - 1) * settings.ORDER_STEP_SIZE)
 
