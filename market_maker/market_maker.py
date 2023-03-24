@@ -83,7 +83,7 @@ class ExchangeInterface:
             else:
                 raise NotImplementedError("Unknown future type; not quanto or inverse: %s" % instrument['symbol'])
 
-            if instrument['underlyingToSettleMultiplier'] is None:
+            if 'underlyingToSettleMultiplier' not in instrument or instrument['underlyingToSettleMultiplier'] is None:
                 multiplier = float(instrument['multiplier']) / float(instrument['quoteToSettleMultiplier'])
             else:
                 multiplier = float(instrument['multiplier']) / float(instrument['underlyingToSettleMultiplier'])
