@@ -14,8 +14,8 @@ from market_maker.utils import log, constants, errors, math
 
 # Used for reloading the bot - saves modified times of key files
 import os
-watched_files_mtimes = [(f, getmtime(f)) for f in settings.WATCHED_FILES]
 
+watched_files_mtimes = [(f, getmtime(f)) for f in settings.WATCHED_FILES]
 
 #
 # Helpers
@@ -215,13 +215,14 @@ class OrderManager:
 
         self.start_time = datetime.now()
         self.instrument = self.exchange.get_instrument()
-        if settings.ORDER_START_SIZE % self.instrument['lotSize'] != 0 or settings.ORDER_START_SIZE < self.instrument['lotSize']:
+        if settings.ORDER_START_SIZE % self.instrument['lotSize'] != 0 or settings.ORDER_START_SIZE < self.instrument[
+            'lotSize']:
             print(f"Invalid ORDER_START_SIZE, must be divisible by lotSize of {self.exchange.symbol} instrument")
             print(f"Setting ORDER_START_SIZE to lotSize of {self.exchange.symbol}: {self.instrument['lotSize']}")
             settings.ORDER_START_SIZE = self.instrument['lotSize']
 
-
-        if settings.ORDER_STEP_SIZE % self.instrument['lotSize'] != 0 or settings.ORDER_STEP_SIZE < self.instrument['lotSize']:
+        if settings.ORDER_STEP_SIZE % self.instrument['lotSize'] != 0 or settings.ORDER_STEP_SIZE < self.instrument[
+            'lotSize']:
             print(f"Invalid ORDER_STEP_SIZE, must be divisible by lotSize of {self.exchange.symbol} instrument")
             print(f"Setting ORDER_STEP_SIZE to lotSize of {self.exchange.symbol}: {self.instrument['lotSize']}")
             settings.ORDER_STEP_SIZE = self.instrument['lotSize']
@@ -245,10 +246,12 @@ class OrderManager:
         self.running_qty = self.exchange.get_delta()
         instrument = self.exchange.get_instrument()
         tickLog = instrument['tickLog']
-        margin = self.exchange.get_margin(instrument['settlCurrency'])
+        settleCurrency = instrument['settlCurrency']
+        margin = self.exchange.get_margin(settleCurrency)
         self.marginBalance = margin["marginBalance"]
 
-        logger.info("Current XBT Balance: %.6f" % XBt_to_XBT(self.marginBalance))
+        major_currency_amount = minor_to_major(settleCurrency, self.marginBalance)
+        logger.info("Current " + major_currency_amount[0] + " Balance: %.6f" % major_currency_amount[1])
         logger.info("Current Contract Position: %d" % self.running_qty)
         if settings.CHECK_POSITION_LIMITS:
             logger.info("Position limits: %d/%d" % (settings.MIN_POSITION, settings.MAX_POSITION))
@@ -256,7 +259,7 @@ class OrderManager:
             logger.info("Avg Cost Price: %.*f" % (tickLog, float(position['avgCostPrice'])))
             logger.info("Avg Entry Price: %.*f" % (tickLog, float(position['avgEntryPrice'])))
         logger.info("Contracts Traded This Run: %d" % (self.running_qty - self.starting_qty))
-        logger.info("Total Contract Delta: %.4f XBT" % self.exchange.calc_delta()['spot'])
+        logger.info("Total Contract Delta: %.4f %s" % (self.exchange.calc_delta()['spot'], instrument['underlying']))
 
     def get_ticker(self):
         ticker = self.exchange.get_ticker()
@@ -533,13 +536,21 @@ class OrderManager:
         logger.info("Restarting the market maker...")
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
+
 #
 # Helpers
 #
 
-
-def XBt_to_XBT(XBt):
-    return float(XBt) / constants.XBt_TO_XBT
+def minor_to_major(currency, value):
+    f_value = float(value)
+    if currency == "XBt":
+        return ["XBT", f_value / constants.XBt_TO_XBT]
+    elif currency == "USDt":
+        return ["USDT", f_value / constants.USDt_TO_USDT]
+    elif currency == "Gwei":
+        return ["ETH", f_value / constants.Gwei_TO_ETH]
+    logger.error("Unknown margin currency: " + currency)
+    return None
 
 
 def cost(instrument, quantity, price):

@@ -215,14 +215,14 @@ class BitMEXWebsocket():
     def __on_message(self, arg, message):
         '''Handler for parsing WS messages.'''
         message = json.loads(message)
-        logger.info(json.dumps(message))
+        logger.debug(json.dumps(message))
 
         table = message['table'] if 'table' in message else None
         action = message['action'] if 'action' in message else None
         try:
             if 'subscribe' in message:
                 if message['success']:
-                    logger.info("Subscribed to %s." % message['subscribe'])
+                    logger.debug("Subscribed to %s." % message['subscribe'])
                 else:
                     self.error("Unable to subscribe to %s. Error: \"%s\" Please check and restart." %
                                (message['request']['args'][0], message['error']))
@@ -245,13 +245,13 @@ class BitMEXWebsocket():
                 # 'update'  - update row
                 # 'delete'  - delete row
                 if action == 'partial':
-                    logger.info("%s: partial" % table)
+                    logger.debug("%s: partial" % table)
                     self.data[table] += message['data']
                     # Keys are communicated on partials to let you know how to uniquely identify
                     # an item. We use it for updates.
                     self.keys[table] = message['keys']
                 elif action == 'insert':
-                    logger.info('%s: inserting %s' % (table, message['data']))
+                    logger.debug('%s: inserting %s' % (table, message['data']))
                     self.data[table] += message['data']
 
                     # Limit the max length of the table to avoid excessive memory usage.
@@ -260,7 +260,7 @@ class BitMEXWebsocket():
                         self.data[table] = self.data[table][(BitMEXWebsocket.MAX_TABLE_LEN // 2):]
 
                 elif action == 'update':
-                    logger.info('%s: updating %s' % (table, message['data']))
+                    logger.debug('%s: updating %s' % (table, message['data']))
                     # Locate the item in the collection and update it.
                     for updateData in message['data']:
                         item = findItemByKeys(self.keys[table], self.data[table], updateData)
