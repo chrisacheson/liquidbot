@@ -67,8 +67,8 @@ class ExchangeInterface:
 
         sleep(settings.API_REST_INTERVAL)
 
-    def get_portfolio(self):
-        contracts = settings.CONTRACTS
+    def get_portfolio(self, symbol):
+        contracts = [symbol]
         portfolio = {}
         for symbol in contracts:
             position = self.bitmex.position(symbol=symbol)
@@ -98,28 +98,27 @@ class ExchangeInterface:
 
         return portfolio
 
-    def calc_delta(self):
-        """Calculate currency delta for portfolio"""
-        portfolio = self.get_portfolio()
-        spot_delta = 0
-        mark_delta = 0
-        for symbol in portfolio:
-            item = portfolio[symbol]
-            if item['futureType'] == "Quanto":
-                spot_delta += item['currentQty'] * item['multiplier'] * item['spot']
-                mark_delta += item['currentQty'] * item['multiplier'] * item['markPrice']
-            elif item['futureType'] == "Inverse":
-                spot_delta += (item['multiplier'] / item['spot']) * item['currentQty']
-                mark_delta += (item['multiplier'] / item['markPrice']) * item['currentQty']
-            elif item['futureType'] == "Linear":
-                spot_delta += item['multiplier'] * item['currentQty']
-                mark_delta += item['multiplier'] * item['currentQty']
-        basis_delta = mark_delta - spot_delta
+    def calc_delta(self, symbol):
+        portfolio = self.get_portfolio(symbol)
+        item = portfolio[symbol]
+
         delta = {
-            "spot": spot_delta,
-            "mark_price": mark_delta,
-            "basis": basis_delta
+            "spot": 0,
+            "mark_price": 0,
+            "basis": 0
         }
+
+        if item['futureType'] == "Quanto":
+            delta["spot"] += item['currentQty'] * item['multiplier'] * item['spot']
+            delta["mark_price"] += item['currentQty'] * item['multiplier'] * item['markPrice']
+        elif item['futureType'] == "Inverse":
+            delta["spot"] += (item['multiplier'] / item['spot']) * item['currentQty']
+            delta["mark_price"] += (item['multiplier'] / item['markPrice']) * item['currentQty']
+        elif item['futureType'] == "Linear":
+            delta["spot"] += item['multiplier'] * item['currentQty']
+            delta["mark_price"] += item['multiplier'] * item['currentQty']
+        delta["basis"] = delta["spot"] - delta["mark_price"]
+
         return delta
 
     def get_delta(self, symbol=None):
@@ -259,7 +258,8 @@ class OrderManager:
             logger.info("Avg Cost Price: %.*f" % (tickLog, float(position['avgCostPrice'])))
             logger.info("Avg Entry Price: %.*f" % (tickLog, float(position['avgEntryPrice'])))
         logger.info("Contracts Traded This Run: %d" % (self.running_qty - self.starting_qty))
-        logger.info("Total Contract Delta: %.4f %s" % (self.exchange.calc_delta()['spot'], instrument['underlying']))
+        delta = self.exchange.calc_delta(instrument['symbol'])
+        logger.info(instrument['symbol'] + " Delta: %.4f %s" % (delta['spot'], instrument['underlying']))
 
     def get_ticker(self):
         ticker = self.exchange.get_ticker()
