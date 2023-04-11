@@ -13,9 +13,9 @@ from market_maker.utils import log
 from market_maker.utils.math import toNearest
 from future.utils import iteritems
 from future.standard_library import hooks
+
 with hooks():  # Python 2/3 compat
     from urllib.parse import urlparse, urlunparse
-
 
 logger = log.setup_custom_logger('root')
 
@@ -29,7 +29,6 @@ logger = log.setup_custom_logger('root')
 # Right after, the MM can start using its data. It will be updated in realtime, so the MM can
 # poll as often as it wants.
 class BitMEXWebsocket():
-
     # Don't grow a table larger than this amount. Helps cap memory usage.
     MAX_TABLE_LEN = 200
 
@@ -107,8 +106,13 @@ class BitMEXWebsocket():
         # The instrument has a tickSize. Use it to round values.
         return {k: toNearest(float(v or 0), instrument['tickSize']) for k, v in iteritems(ticker)}
 
-    def funds(self):
-        return self.data['margin'][0]
+    def funds(self, currency):
+        margins = self.data['margin']
+        for m in margins:
+            if m['currency'] == currency:
+                return m
+        logger.error("Unable to find margin for currency: " + currency)
+        return None
 
     def market_depth(self, symbol):
         raise NotImplementedError('orderBook is not subscribed; use askPrice and bidPrice on instrument')
@@ -117,7 +121,8 @@ class BitMEXWebsocket():
     def open_orders(self, clOrdIDPrefix):
         orders = self.data['order']
         # Filter to only open orders (leavesQty > 0) and those that we actually placed
-        return [o for o in orders if 'clOrdID' in o and str(o['clOrdID']).startswith(clOrdIDPrefix) and o['leavesQty'] > 0]
+        return [o for o in orders if
+                'clOrdID' in o and str(o['clOrdID']).startswith(clOrdIDPrefix) and o['leavesQty'] > 0]
 
     def position(self, symbol):
         positions = self.data['position']
@@ -135,7 +140,7 @@ class BitMEXWebsocket():
     #
     def error(self, err):
         self._error = err
-        logger.error(err)
+        logger.error(str(err))
         self.exit()
 
     def exit(self):
@@ -207,17 +212,17 @@ class BitMEXWebsocket():
         '''Send a raw command.'''
         self.ws.send(json.dumps({"op": command, "args": args or []}))
 
-    def __on_message(self, message):
+    def __on_message(self, arg, message):
         '''Handler for parsing WS messages.'''
         message = json.loads(message)
-        logger.debug(json.dumps(message))
+        logger.info(json.dumps(message))
 
         table = message['table'] if 'table' in message else None
         action = message['action'] if 'action' in message else None
         try:
             if 'subscribe' in message:
                 if message['success']:
-                    logger.debug("Subscribed to %s." % message['subscribe'])
+                    logger.info("Subscribed to %s." % message['subscribe'])
                 else:
                     self.error("Unable to subscribe to %s. Error: \"%s\" Please check and restart." %
                                (message['request']['args'][0], message['error']))
@@ -240,13 +245,13 @@ class BitMEXWebsocket():
                 # 'update'  - update row
                 # 'delete'  - delete row
                 if action == 'partial':
-                    logger.debug("%s: partial" % table)
+                    logger.info("%s: partial" % table)
                     self.data[table] += message['data']
                     # Keys are communicated on partials to let you know how to uniquely identify
                     # an item. We use it for updates.
                     self.keys[table] = message['keys']
                 elif action == 'insert':
-                    logger.debug('%s: inserting %s' % (table, message['data']))
+                    logger.info('%s: inserting %s' % (table, message['data']))
                     self.data[table] += message['data']
 
                     # Limit the max length of the table to avoid excessive memory usage.
@@ -255,7 +260,7 @@ class BitMEXWebsocket():
                         self.data[table] = self.data[table][(BitMEXWebsocket.MAX_TABLE_LEN // 2):]
 
                 elif action == 'update':
-                    logger.debug('%s: updating %s' % (table, message['data']))
+                    logger.info('%s: updating %s' % (table, message['data']))
                     # Locate the item in the collection and update it.
                     for updateData in message['data']:
                         item = findItemByKeys(self.keys[table], self.data[table], updateData)
@@ -270,8 +275,8 @@ class BitMEXWebsocket():
                                 if contExecuted > 0:
                                     instrument = self.get_instrument(item['symbol'])
                                     logger.info("Execution: %s %d Contracts of %s at %.*f" %
-                                             (item['side'], contExecuted, item['symbol'],
-                                              instrument['tickLog'], item['price'] or updateData['price']))
+                                                (item['side'], contExecuted, item['symbol'],
+                                                 instrument['tickLog'], item['price'] or updateData['price']))
 
                         # Update this item.
                         item.update(updateData)
@@ -291,16 +296,17 @@ class BitMEXWebsocket():
         except:
             logger.error(traceback.format_exc())
 
-    def __on_open(self):
+    def __on_open(self, arg):
         logger.debug("Websocket Opened.")
+        logger.info(arg)
 
     def __on_close(self):
         logger.info('Websocket Closed')
         self.exit()
 
-    def __on_error(self, error):
+    def __on_error(self, error, arg):
         if not self.exited:
-            self.error(error)
+            self.error(arg)
 
     def __reset(self):
         self.data = {}
@@ -318,11 +324,11 @@ def findItemByKeys(keys, table, matchData):
         if matched:
             return item
 
+
 if __name__ == "__main__":
     # create console handler and set level to debug
     logger = log.setup_custom_logger('websocket', logging.DEBUG)
     ws = BitMEXWebsocket()
     ws.connect("https://testnet.bitmex.com/api/v1")
-    while(ws.ws.sock.connected):
+    while (ws.ws.sock.connected):
         sleep(1)
-
