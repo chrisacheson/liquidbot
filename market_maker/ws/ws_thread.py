@@ -13,9 +13,9 @@ from market_maker.utils import log
 from market_maker.utils.math import toNearest
 from future.utils import iteritems
 from future.standard_library import hooks
-
 with hooks():  # Python 2/3 compat
     from urllib.parse import urlparse, urlunparse
+
 
 logger = log.setup_custom_logger('root')
 
@@ -29,6 +29,7 @@ logger = log.setup_custom_logger('root')
 # Right after, the MM can start using its data. It will be updated in realtime, so the MM can
 # poll as often as it wants.
 class BitMEXWebsocket():
+
     # Don't grow a table larger than this amount. Helps cap memory usage.
     MAX_TABLE_LEN = 200
 
@@ -121,8 +122,7 @@ class BitMEXWebsocket():
     def open_orders(self, clOrdIDPrefix):
         orders = self.data['order']
         # Filter to only open orders (leavesQty > 0) and those that we actually placed
-        return [o for o in orders if
-                'clOrdID' in o and str(o['clOrdID']).startswith(clOrdIDPrefix) and o['leavesQty'] > 0]
+        return [o for o in orders if 'clOrdID' in o and str(o['clOrdID']).startswith(clOrdIDPrefix) and o['leavesQty'] > 0]
 
     def position(self, symbol):
         positions = self.data['position']
@@ -140,7 +140,7 @@ class BitMEXWebsocket():
     #
     def error(self, err):
         self._error = err
-        logger.error(str(err))
+        logger.error(err)
         self.exit()
 
     def exit(self):
@@ -275,8 +275,8 @@ class BitMEXWebsocket():
                                 if contExecuted > 0:
                                     instrument = self.get_instrument(item['symbol'])
                                     logger.info("Execution: %s %d Contracts of %s at %.*f" %
-                                                (item['side'], contExecuted, item['symbol'],
-                                                 instrument['tickLog'], item['price'] or updateData['price']))
+                                             (item['side'], contExecuted, item['symbol'],
+                                              instrument['tickLog'], item['price'] or updateData['price']))
 
                         # Update this item.
                         item.update(updateData)
@@ -323,11 +323,11 @@ def findItemByKeys(keys, table, matchData):
         if matched:
             return item
 
-
 if __name__ == "__main__":
     # create console handler and set level to debug
     logger = log.setup_custom_logger('websocket', logging.DEBUG)
     ws = BitMEXWebsocket()
     ws.connect("https://testnet.bitmex.com/api/v1")
-    while (ws.ws.sock.connected):
+    while(ws.ws.sock.connected):
         sleep(1)
+
