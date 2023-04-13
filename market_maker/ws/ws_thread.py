@@ -212,7 +212,7 @@ class BitMEXWebsocket():
         '''Send a raw command.'''
         self.ws.send(json.dumps({"op": command, "args": args or []}))
 
-    def __on_message(self, arg, message):
+    def __on_message(self, message):
         '''Handler for parsing WS messages.'''
         message = json.loads(message)
         logger.debug(json.dumps(message))
@@ -296,17 +296,16 @@ class BitMEXWebsocket():
         except:
             logger.error(traceback.format_exc())
 
-    def __on_open(self, arg):
+    def __on_open(self):
         logger.debug("Websocket Opened.")
-        logger.info(arg)
 
     def __on_close(self):
         logger.info('Websocket Closed')
         self.exit()
 
-    def __on_error(self, error, arg):
+    def __on_error(self, error):
         if not self.exited:
-            self.error(arg)
+            self.error(error)
 
     def __reset(self):
         self.data = {}
