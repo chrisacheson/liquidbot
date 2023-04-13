@@ -131,7 +131,7 @@ class ExchangeInterface:
             symbol = self.symbol
         return self.bitmex.instrument(symbol)
 
-    def get_margin(self, currency):
+    def get_margin(self, currency='XBt'):
         if self.dry_run:
             return {'marginBalance': float(settings.DRY_BTC), 'availableFunds': float(settings.DRY_BTC)}
         return self.bitmex.funds(currency)

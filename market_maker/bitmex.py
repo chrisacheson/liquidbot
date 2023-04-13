@@ -105,7 +105,7 @@ class BitMEX(object):
         return wrapped
 
     @authentication_required
-    def funds(self, currency):
+    def funds(self, currency='XBt'):
         """Get your current balance."""
         return self.ws.funds(currency)
 
