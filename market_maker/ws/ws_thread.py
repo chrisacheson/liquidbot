@@ -107,8 +107,13 @@ class BitMEXWebsocket():
         # The instrument has a tickSize. Use it to round values.
         return {k: toNearest(float(v or 0), instrument['tickSize']) for k, v in iteritems(ticker)}
 
-    def funds(self):
-        return self.data['margin'][0]
+    def funds(self, currency):
+        margins = self.data['margin']
+        for m in margins:
+            if m['currency'] == currency:
+                return m
+        logger.error("Unable to find margin for currency: " + currency)
+        return None
 
     def market_depth(self, symbol):
         raise NotImplementedError('orderBook is not subscribed; use askPrice and bidPrice on instrument')

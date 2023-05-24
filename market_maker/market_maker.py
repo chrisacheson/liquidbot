@@ -67,8 +67,8 @@ class ExchangeInterface:
 
         sleep(settings.API_REST_INTERVAL)
 
-    def get_portfolio(self):
-        contracts = settings.CONTRACTS
+    def get_portfolio(self, symbol):
+        contracts = [symbol]
         portfolio = {}
         for symbol in contracts:
             position = self.bitmex.position(symbol=symbol)
@@ -98,28 +98,27 @@ class ExchangeInterface:
 
         return portfolio
 
-    def calc_delta(self):
-        """Calculate currency delta for portfolio"""
-        portfolio = self.get_portfolio()
-        spot_delta = 0
-        mark_delta = 0
-        for symbol in portfolio:
-            item = portfolio[symbol]
-            if item['futureType'] == "Quanto":
-                spot_delta += item['currentQty'] * item['multiplier'] * item['spot']
-                mark_delta += item['currentQty'] * item['multiplier'] * item['markPrice']
-            elif item['futureType'] == "Inverse":
-                spot_delta += (item['multiplier'] / item['spot']) * item['currentQty']
-                mark_delta += (item['multiplier'] / item['markPrice']) * item['currentQty']
-            elif item['futureType'] == "Linear":
-                spot_delta += item['multiplier'] * item['currentQty']
-                mark_delta += item['multiplier'] * item['currentQty']
-        basis_delta = mark_delta - spot_delta
+    def calc_delta(self, symbol):
+        portfolio = self.get_portfolio(symbol)
+        item = portfolio[symbol]
+
         delta = {
-            "spot": spot_delta,
-            "mark_price": mark_delta,
-            "basis": basis_delta
+            "spot": 0,
+            "mark_price": 0,
+            "basis": 0
         }
+
+        if item['futureType'] == "Quanto":
+            delta["spot"] += item['currentQty'] * item['multiplier'] * item['spot']
+            delta["mark_price"] += item['currentQty'] * item['multiplier'] * item['markPrice']
+        elif item['futureType'] == "Inverse":
+            delta["spot"] += (item['multiplier'] / item['spot']) * item['currentQty']
+            delta["mark_price"] += (item['multiplier'] / item['markPrice']) * item['currentQty']
+        elif item['futureType'] == "Linear":
+            delta["spot"] += item['multiplier'] * item['currentQty']
+            delta["mark_price"] += item['multiplier'] * item['currentQty']
+        delta["basis"] = delta["spot"] - delta["mark_price"]
+
         return delta
 
     def get_delta(self, symbol=None):
@@ -132,10 +131,10 @@ class ExchangeInterface:
             symbol = self.symbol
         return self.bitmex.instrument(symbol)
 
-    def get_margin(self):
+    def get_margin(self, currency='XBt'):
         if self.dry_run:
             return {'marginBalance': float(settings.DRY_BTC), 'availableFunds': float(settings.DRY_BTC)}
-        return self.bitmex.funds()
+        return self.bitmex.funds(currency)
 
     def get_orders(self):
         if self.dry_run:
@@ -219,7 +218,7 @@ class OrderManager:
             print(f"Invalid ORDER_START_SIZE, must be divisible by lotSize of {self.exchange.symbol} instrument")
             print(f"Setting ORDER_START_SIZE to lotSize of {self.exchange.symbol}: {self.instrument['lotSize']}")
             settings.ORDER_START_SIZE = self.instrument['lotSize']
-            
+
 
         if settings.ORDER_STEP_SIZE % self.instrument['lotSize'] != 0 or settings.ORDER_STEP_SIZE < self.instrument['lotSize']:
             print(f"Invalid ORDER_STEP_SIZE, must be divisible by lotSize of {self.exchange.symbol} instrument")
@@ -241,13 +240,16 @@ class OrderManager:
     def print_status(self):
         """Print the current MM status."""
 
-        margin = self.exchange.get_margin()
         position = self.exchange.get_position()
         self.running_qty = self.exchange.get_delta()
-        tickLog = self.exchange.get_instrument()['tickLog']
-        self.start_XBt = margin["marginBalance"]
+        instrument = self.exchange.get_instrument()
+        tickLog = instrument['tickLog']
+        settleCurrency = instrument['settlCurrency']
+        margin = self.exchange.get_margin(settleCurrency)
+        self.marginBalance = margin["marginBalance"]
 
-        logger.info("Current XBT Balance: %.6f" % XBt_to_XBT(self.start_XBt))
+        major_currency_amount = minor_to_major(settleCurrency, self.marginBalance)
+        logger.info("Current " + major_currency_amount[0] + " Balance: %.6f" % major_currency_amount[1])
         logger.info("Current Contract Position: %d" % self.running_qty)
         if settings.CHECK_POSITION_LIMITS:
             logger.info("Position limits: %d/%d" % (settings.MIN_POSITION, settings.MAX_POSITION))
@@ -255,7 +257,8 @@ class OrderManager:
             logger.info("Avg Cost Price: %.*f" % (tickLog, float(position['avgCostPrice'])))
             logger.info("Avg Entry Price: %.*f" % (tickLog, float(position['avgEntryPrice'])))
         logger.info("Contracts Traded This Run: %d" % (self.running_qty - self.starting_qty))
-        logger.info("Total Contract Delta: %.4f XBT" % self.exchange.calc_delta()['spot'])
+        delta = self.exchange.calc_delta(instrument['symbol'])
+        logger.info(instrument['symbol'] + " Delta: %.4f %s" % (delta['spot'], instrument['underlying']))
 
     def get_ticker(self):
         ticker = self.exchange.get_ticker()
@@ -531,13 +534,21 @@ class OrderManager:
         logger.info("Restarting the market maker...")
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
+
 #
 # Helpers
 #
 
-
-def XBt_to_XBT(XBt):
-    return float(XBt) / constants.XBt_TO_XBT
+def minor_to_major(currency, value):
+    f_value = float(value)
+    if currency == "XBt":
+        return ["XBT", f_value / constants.XBt_TO_XBT]
+    elif currency == "USDt":
+        return ["USDT", f_value / constants.USDt_TO_USDT]
+    elif currency == "Gwei":
+        return ["ETH", f_value / constants.Gwei_TO_ETH]
+    logger.error("Unknown margin currency: " + currency)
+    return None
 
 
 def cost(instrument, quantity, price):
